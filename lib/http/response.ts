@@ -62,7 +62,10 @@ export function handleRouteError(error: unknown) {
     return errorResponse("Validation error", 400, "VALIDATION_ERROR", error.flatten().fieldErrors);
   }
 
+  if (error instanceof SyntaxError && "message" in error && (error.message.includes("JSON") || error.message.includes("Unexpected"))) {
+    return errorResponse("Invalid or malformed JSON payload", 400, "INVALID_JSON");
+  }
+
   console.error("Unhandled Route Error:", error);
   return errorResponse("Internal server error", 500, "INTERNAL_SERVER_ERROR");
 }
-

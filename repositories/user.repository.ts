@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 
 export class UserRepository {
   static async findById(id: string) {
@@ -97,4 +96,3 @@ export class UserRepository {
     });
   }
 }
-

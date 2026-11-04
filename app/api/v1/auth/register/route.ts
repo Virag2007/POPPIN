@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { AuthService } from "@/services/auth.service";
 import { registerSchema } from "@/lib/validation/auth";
 import { successResponse, handleRouteError } from "@/lib/http/response";
@@ -25,4 +25,3 @@ export async function POST(request: NextRequest) {
     return handleRouteError(error);
   }
 }
-

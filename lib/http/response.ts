@@ -65,3 +65,4 @@ export function handleRouteError(error: unknown) {
   console.error("Unhandled Route Error:", error);
   return errorResponse("Internal server error", 500, "INTERNAL_SERVER_ERROR");
 }
+

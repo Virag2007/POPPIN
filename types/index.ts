@@ -58,3 +58,4 @@ export interface SafeProfile {
   createdAt: Date;
   updatedAt: Date;
 }
+

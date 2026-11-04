@@ -127,3 +127,4 @@ model UserReport {
   status         String   @default("PENDING") // PENDING, REVIEWED, RESOLVED, DISMISSED
   createdAt      DateTime @default(now())
 }
+

@@ -1,0 +1,129 @@
+// POPPIN Prisma Schema - Identity & User Management (Developer 1)
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String?
+  googleId     String?   @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile         Profile?
+  onboarding      Onboarding?
+  privacySettings PrivacySettings?
+
+  // Password reset tokens
+  passwordResetTokens PasswordResetToken[]
+
+  // Connections (Followers & Following)
+  following Follow[] @relation("UserFollowing")
+  followers Follow[] @relation("UserFollowers")
+
+  // Blocks (Blocker & Blocked)
+  blockedUsers Block[] @relation("UserBlocks")
+  blockedBy    Block[] @relation("UserBlockedBy")
+
+  // Reports
+  reportsSubmitted UserReport[] @relation("Reporter")
+  reportsReceived  UserReport[] @relation("ReportedUser")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  username    String   @unique
+  displayName String?
+  avatar      String?
+  coverImage  String?
+  headline    String?
+  bio         String?
+  location    String?
+
+  // Stored as JSON strings for simplicity & portability across DBs
+  skills      String   @default("[]") // string[]
+  interests   String   @default("[]") // string[]
+  links       String   @default("[]") // { title: string, url: string }[]
+  education   String   @default("[]") // { id, school, degree, fieldOfStudy, startDate, endDate }[]
+  experience  String   @default("[]") // { id, company, title, location, startDate, endDate, current, description }[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Onboarding {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String?
+  headline    String?
+  skills      String   @default("[]") // string[]
+  interests   String   @default("[]") // string[]
+  isCompleted Boolean  @default(false)
+  step        Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model PrivacySettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPrivate           Boolean  @default(false)
+  showActivityStatus  Boolean  @default(true)
+  allowTagging        Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Block {
+  id          String   @id @default(uuid())
+  blockerId   String
+  blocker     User     @relation("UserBlocks", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId   String
+  blocked     User     @relation("UserBlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+model UserReport {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User     @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         String
+  details        String?
+  status         String   @default("PENDING") // PENDING, REVIEWED, RESOLVED, DISMISSED
+  createdAt      DateTime @default(now())
+}

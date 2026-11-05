@@ -1,6 +1,6 @@
 # POPPIN - Backend (Developer 1: Identity & User Management)
 
-This repository contains the backend implementation for **Developer 1 (Identity & User Management)** for the POPPIN social platform, built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma ORM**.
+This repository contains the complete backend implementation for **Developer 1 (Identity & User Management)** for the POPPIN social platform, built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, and **Prisma ORM**.
 
 ---
 
@@ -34,7 +34,7 @@ All API endpoints are prefixed with `/api/v1`.
   "error": {
     "code": "ERROR_CODE",
     "message": "Human readable error description",
-    "details": { ... } // optional validation details
+    "details": { ... }
   }
 }
 ```
@@ -51,44 +51,79 @@ All API endpoints are prefixed with `/api/v1`.
 
 ---
 
-## 3. Database & Migrations
-- **ORM**: Prisma Client.
-- **Database**: SQLite (`prisma/dev.db`) for lightweight, zero-dependency local development and testing; compatible with PostgreSQL.
-- **Generate Client**: `npm run prisma:generate`
-- **Push Schema**: `npm run prisma:push`
-- **Migrate Dev**: `npm run prisma:migrate`
+## 3. Consolidated Endpoint Checklist
+All assigned endpoints match the agreed contract and are implemented under `app/api/v1/`:
+
+| Method | Route | Purpose | Auth |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/v1/auth/register` | Register with email/password | Public |
+| `POST` | `/api/v1/auth/login` | Login with email/password | Public |
+| `GET` | `/api/v1/auth/google` | Start Google OAuth | Public |
+| `GET` | `/api/v1/auth/google/callback` | Handle Google OAuth callback | Public |
+| `POST` | `/api/v1/auth/forgot-password` | Start password recovery | Public |
+| `POST` | `/api/v1/auth/reset-password` | Reset password with token | Public |
+| `POST` | `/api/v1/auth/logout` | End session & clear cookie | Public |
+| `GET` | `/api/v1/auth/me` | Get authenticated user identity | Protected |
+| `POST` | `/api/v1/users/me/profile` | Create own profile | Protected |
+| `GET` | `/api/v1/users/me/profile` | Get own profile | Protected |
+| `PATCH` | `/api/v1/users/me/profile` | Edit own profile details | Protected |
+| `GET` | `/api/v1/usernames/availability?username={username}` | Check username availability | Public |
+| `GET` | `/api/v1/profiles/{username}` | Get public profile and counts | Public |
+| `PUT` | `/api/v1/users/me/profile/skills` | Manage skills list | Protected |
+| `PUT` | `/api/v1/users/me/profile/interests` | Manage interests list | Protected |
+| `PUT` | `/api/v1/users/me/profile/links` | Manage external links | Protected |
+| `PUT` | `/api/v1/users/me/profile/education` | Manage education records | Protected |
+| `PUT` | `/api/v1/users/me/profile/experience` | Manage experience records | Protected |
+| `GET` | `/api/v1/onboarding` | Get onboarding progress | Protected |
+| `PUT` | `/api/v1/onboarding/step-1` | Save role and headline | Protected |
+| `PUT` | `/api/v1/onboarding/step-2` | Save skills and interests | Protected |
+| `GET` | `/api/v1/onboarding/follow-suggestions` | Get onboarding follow suggestions | Protected |
+| `POST` | `/api/v1/onboarding/complete` | Mark onboarding complete | Protected |
+| `POST` | `/api/v1/users/{userId}/follow` | Follow user | Protected |
+| `DELETE` | `/api/v1/users/{userId}/follow` | Unfollow user | Protected |
+| `GET` | `/api/v1/users/{userId}/followers` | Get user's followers | Public |
+| `GET` | `/api/v1/users/{userId}/following` | Get user's following list | Public |
+| `GET` | `/api/v1/users/me/followers` | Get own followers | Protected |
+| `GET` | `/api/v1/users/me/following` | Get own following list | Protected |
+| `GET` | `/api/v1/users/suggestions` | Get suggested people | Protected |
+| `GET` | `/api/v1/users/me/account` | Get account details | Protected |
+| `PATCH` | `/api/v1/users/me/account` | Update account details (email) | Protected |
+| `GET` | `/api/v1/users/me/privacy` | Get privacy settings | Protected |
+| `PATCH` | `/api/v1/users/me/privacy` | Update privacy settings | Protected |
+| `DELETE` | `/api/v1/users/me` | Delete own account (Cascade) | Protected |
+| `POST` | `/api/v1/users/{userId}/block` | Block user | Protected |
+| `DELETE` | `/api/v1/users/{userId}/block` | Unblock user | Protected |
+| `POST` | `/api/v1/users/{userId}/report` | Report user | Protected |
 
 ---
 
-## 4. Environment Variables
-See `.env.example` for details:
-```env
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="your-jwt-secret-key-at-least-32-chars-long"
-JWT_EXPIRES_IN="7d"
-GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GOOGLE_REDIRECT_URI="http://localhost:3000/api/v1/auth/google/callback"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
+## 4. Developer 2 Integration Contracts
+See [`docs/developer-2-integration.md`](./docs/developer-2-integration.md) for full contracts regarding:
+- Follow events for the Notification module (`NEW_FOLLOWER`)
+- Follower queries for the Following Feed
+- Block & privacy visibility restrictions for posts and messaging
 
 ---
 
-## 5. Running & Testing
+## 5. API Documentation & Postman Collection
+Import [`docs/poppin-api-collection.json`](./docs/poppin-api-collection.json) into Postman or Insomnia. It includes:
+- All 37 endpoint requests organized by module
+- Sample request bodies and query parameters
+- `{{baseUrl}}` and `{{authToken}}` environment variables
+
+---
+
+## 6. Running & Testing
 ```bash
-# Install dependencies
-npm install
-
 # Push database schema
 npx prisma db push
 
-# Run development server
+# Run Next.js development server
 npm run dev
 
-# Run build
-npm run build
-
-# Run test suite
+# Run full test suite (Phases 1-5 + E2E integration)
 npm test
-```
 
+# Run Next.js production build
+npm run build
+```

@@ -1,5 +1,7 @@
 import crypto from "crypto";
+import { prisma } from "@/lib/db";
 import { ProfileRepository } from "@/repositories/profile.repository";
+import { ConnectionRepository } from "@/repositories/connection.repository";
 import { AppError } from "@/lib/http/response";
 import {
   CreateProfileInput,
@@ -18,7 +20,11 @@ function parseJsonArray<T>(raw: string | null | undefined): T[] {
   }
 }
 
-function formatProfileResponse(profile: any, counts: { followersCount: number; followingCount: number }): SafeProfile {
+function formatProfileResponse(
+  profile: any,
+  counts: { followersCount: number; followingCount: number },
+  privacy?: { isPrivate: boolean; showActivityStatus: boolean; allowTagging: boolean } | null
+): SafeProfile {
   return {
     id: profile.id,
     userId: profile.userId,
@@ -36,6 +42,9 @@ function formatProfileResponse(profile: any, counts: { followersCount: number; f
     experience: parseJsonArray<any>(profile.experience),
     followersCount: counts.followersCount,
     followingCount: counts.followingCount,
+    isPrivate: privacy?.isPrivate ?? false,
+    showActivityStatus: privacy?.showActivityStatus ?? true,
+    allowTagging: privacy?.allowTagging ?? true,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   };
@@ -73,7 +82,8 @@ export class ProfileService {
 
     const created = await ProfileRepository.create(userId, input);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(created, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(created, counts, privacy);
   }
 
   static async getOwnProfile(userId: string) {
@@ -83,7 +93,8 @@ export class ProfileService {
     }
 
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(profile, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(profile, counts, privacy);
   }
 
   static async updateOwnProfile(userId: string, input: UpdateProfileInput) {
@@ -94,17 +105,65 @@ export class ProfileService {
 
     const updated = await ProfileRepository.update(userId, input);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 
-  static async getPublicProfileByUsername(username: string) {
+  static async getPublicProfileByUsername(username: string, viewerId?: string) {
     const profile = await ProfileRepository.findByUsername(username);
     if (!profile) {
       throw new AppError(`User profile @${username} not found`, 404, "PROFILE_NOT_FOUND");
     }
 
+    // Check block restriction
+    if (viewerId) {
+      const isBlocked = await ConnectionRepository.isBlockedOrBlocking(viewerId, profile.userId);
+      if (isBlocked) {
+        throw new AppError(`User profile @${username} not found`, 404, "PROFILE_NOT_FOUND");
+      }
+    }
+
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(profile.userId);
-    return formatProfileResponse(profile, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId: profile.userId } });
+
+    const isPrivate = privacy?.isPrivate ?? false;
+    const showActivityStatus = privacy?.showActivityStatus ?? true;
+    const allowTagging = privacy?.allowTagging ?? true;
+
+    // Backend-enforced privacy: if account is private and viewer is not owner or follower, shield details
+    if (isPrivate && viewerId !== profile.userId) {
+      const isFollowing = viewerId
+        ? !!(await ConnectionRepository.findFollow(viewerId, profile.userId))
+        : false;
+
+      if (!isFollowing) {
+        return {
+          id: profile.id,
+          userId: profile.userId,
+          username: profile.username,
+          displayName: profile.displayName || null,
+          avatar: profile.avatar || null,
+          coverImage: null,
+          headline: profile.headline || null,
+          bio: null,
+          location: null,
+          skills: [],
+          interests: [],
+          links: [],
+          education: [],
+          experience: [],
+          followersCount: counts.followersCount,
+          followingCount: counts.followingCount,
+          isPrivate: true,
+          showActivityStatus,
+          allowTagging,
+          createdAt: profile.createdAt,
+          updatedAt: profile.updatedAt,
+        };
+      }
+    }
+
+    return formatProfileResponse(profile, counts, privacy);
   }
 
   static async updateSkills(userId: string, skills: string[]) {
@@ -115,7 +174,8 @@ export class ProfileService {
 
     const updated = await ProfileRepository.updateSkills(userId, skills);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 
   static async updateInterests(userId: string, interests: string[]) {
@@ -126,7 +186,8 @@ export class ProfileService {
 
     const updated = await ProfileRepository.updateInterests(userId, interests);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 
   static async updateLinks(userId: string, links: any[]) {
@@ -137,7 +198,8 @@ export class ProfileService {
 
     const updated = await ProfileRepository.updateLinks(userId, links);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 
   static async updateEducation(userId: string, education: any[]) {
@@ -158,7 +220,8 @@ export class ProfileService {
 
     const updated = await ProfileRepository.updateEducation(userId, items);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 
   static async updateExperience(userId: string, experience: any[]) {
@@ -180,7 +243,7 @@ export class ProfileService {
 
     const updated = await ProfileRepository.updateExperience(userId, items);
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
-    return formatProfileResponse(updated, counts);
+    const privacy = await prisma.privacySettings.findUnique({ where: { userId } });
+    return formatProfileResponse(updated, counts, privacy);
   }
 }
-

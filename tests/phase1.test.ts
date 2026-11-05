@@ -269,7 +269,7 @@ export async function runPhase1Tests() {
 
   // 21. Logout
   console.log("21. Testing Logout...");
-  const logoutRes = await logoutHandler();
+  const logoutRes = await logoutHandler(new NextRequest("http://localhost:3000/api/v1/auth/logout", { method: "POST" }));
   assert.strictEqual(logoutRes.status, 200, "Logout should return 200");
   const cookieHeader = logoutRes.headers.get("set-cookie");
   assert.ok(cookieHeader?.includes("poppin_token=;"), "Cookie should be cleared on logout");

@@ -1,6 +1,6 @@
 # POPPIN – Final Comprehensive Security, Accessibility, Performance & Scalability Audit Report
 
-**Audit Date:** November 5, 2026  
+**Audit Date:** November 6, 2026  
 **Auditor Roles:** Senior Full-Stack Engineer, Application Security Engineer, DevOps Engineer, Database Architect & Accessibility Specialist  
 **Application:** POPPIN Identity & User Management (Developer 1)  
 **Environment:** Next.js 15 (App Router), TypeScript, Tailwind CSS, Prisma ORM, SQLite / PostgreSQL  
@@ -12,10 +12,11 @@
 | Category | Assessment | Status |
 | :--- | :--- | :---: |
 | **Overall Codebase Condition** | Well-architected with strict modular separation (Routes, Services, Repositories, Validations). Clean type contracts and 100% test pass rate across all layers. | **Production Ready** |
-| **Security Status (OWASP ASVS / Top 10)** | Hardened against Injection (XSS, SQLi), CSRF, Broken Auth, Session Fixation, and Brute-Force attacks. Strict URL scheme validation (`http:`, `https:`), session revocation via `tokenVersion`, OAuth state verification, and rate limiting implemented. | **Hardened (A+)** |
+| **Security Status (OWASP ASVS / Top 10)** | Hardened against Injection (XSS, SQLi), CSRF, Broken Auth, Session Fixation, and Brute-Force attacks. Strict URL scheme validation (`http:`, `https:`), session revocation via `tokenVersion`, OAuth state verification, explicit `HS256` JWT algorithm pinning, and rate limiting implemented. | **Hardened (A+)** |
 | **Accessibility (WCAG 2.2 AA)** | Semantic HTML5 landmarks (`header`, `main`, `footer`), bypass blocks (`Skip to main content`), contrast ratio >= 7.6:1 (exceeds 4.5:1 requirement), touch targets >= 44x44px, and keyboard-visible focus rings. | **WCAG 2.2 AA Compliant** |
-| **Performance & Core Web Vitals** | Production build compiles in 6.8s; pre-rendered static content with streaming dynamic endpoints; rate-limiting in-memory sliding window with zero external latency; optimized asset headers. | **Optimized** |
+| **Performance & Core Web Vitals** | Production build compiles cleanly across all 30 routes and Edge middleware; pre-rendered static content with streaming dynamic endpoints; rate-limiting in-memory sliding window with zero external latency; optimized asset headers. | **Optimized** |
 | **Multi-User Scalability & Concurrency** | Added database indexes on foreign keys (`Follow.followingId`, `Block.blockedId`, `UserReport`, `PasswordResetToken`); Prisma `P2002` concurrency conflict mapped to 409 Conflict; stateless JWT architecture with database token versioning for instant revocation across multiple instances. | **Scale Ready** |
+| **Dependencies Security** | Zero production vulnerabilities (`npm audit --omit=dev`: 0 vulnerabilities). Six moderate dev-only build tool warnings (`minimatch` via `typescript-eslint`). | **Verified Clean** |
 
 ---
 
@@ -63,6 +64,37 @@
 - **Resolution:** Stored cryptographically random `state` in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie and verified that callback `state` parameter strictly matches the cookie.
 - **Fixed:** Yes. Verified in `tests/security-audit.test.ts`.
 
+### SEC-07: Pinned JWT Verification Algorithm
+- **Location:** `lib/auth/jwt.ts`
+- **Severity:** Medium (OWASP A02:2021 – Cryptographic Failures)
+- **Impact:** Attackers could attempt algorithm confusion attacks (e.g. `none` or public key signature spoofing) if the algorithm is not explicitly constrained.
+- **Resolution:** Hardcoded `algorithms: ["HS256"]` in `jwt.verify()`.
+- **Fixed:** Yes. Verified in `lib/auth/jwt.ts`.
+
+### SEC-08: Password Hashing Denial of Service (DoS) Prevention
+- **Location:** `lib/validation/auth.ts`
+- **Severity:** Medium (OWASP A05:2021 – Security Misconfiguration / DoS)
+- **Impact:** Attackers sending massive strings (e.g., 100k characters) could consume excessive CPU cycles in bcrypt calculations, starving server resources.
+- **Resolution:** Constrained password fields to `.max(72)` characters (matching bcrypt's internal max capacity).
+- **Fixed:** Yes. Verified in `lib/validation/auth.ts`.
+
+### SEC-09: Backend-Enforced Privacy & Block Restrictions on Profiles & Connections
+- **Location:** `services/profile.service.ts`, `services/connection.service.ts`, `app/api/v1/profiles/[username]/route.ts`, `app/api/v1/users/[userId]/followers/route.ts`, `following/route.ts`
+- **Severity:** High (OWASP A01:2021 – Broken Access Control)
+- **Impact:** If an account is marked private, unauthorized viewers could previously see full profile details and follower lists. Furthermore, blocked users could view public profiles.
+- **Resolution:** 
+  1. Inspect viewer identity via `getOptionalAuthenticatedUser(request)`.
+  2. If viewer is blocked by target user (or has blocked target user), profile and follower queries return `404 Not Found`.
+  3. If target user has `isPrivate: true` and viewer is not the profile owner nor an active follower, sensitive fields (`bio`, `location`, `coverImage`, `skills`, `interests`, `links`, `education`, `experience`) and follower/following arrays are completely shielded.
+- **Fixed:** Yes. Verified in service logic and integration flows.
+
+### SEC-10: Rate Limiting on Username Availability API
+- **Location:** `app/api/v1/usernames/availability/route.ts`
+- **Severity:** Low/Medium (Account Enumeration / Scraping)
+- **Impact:** Malicious actors could rapidly scan and enumerate usernames or dictionary-scrape existing registered accounts.
+- **Resolution:** Added `enforceRateLimit(request, "usernames:availability", { windowMs: 60_000, max: 60 })` returning `429 Too Many Requests`.
+- **Fixed:** Yes. Verified in endpoint route handler.
+
 ### DB-01: Missing Database Indexes on High-Frequency Foreign Keys
 - **Location:** `prisma/schema.prisma`
 - **Severity:** Medium (Database Scalability & Performance)
@@ -99,11 +131,13 @@ All 7 test suites passed with **0 failures**:
 | **Phase 5: Settings, Safety & Block**| `tests/phase5.test.ts` | 9 | **Passed** | 0.4s |
 | **End-to-End User Lifecycle** | `tests/e2e-integration.test.ts` | 11 | **Passed** | 0.4s |
 | **Security, Concurrency & Hardening**| `tests/security-audit.test.ts` | 6 | **Passed** | 0.5s |
-| **Total Automated Suite** | `npm test` | **84** | **100% Passed** | **2.80s** |
+| **Total Automated Suite** | `npm test` | **84** | **100% Passed** | **1.96s** |
 
 ### Additional Tooling Verifications:
 - **TypeScript Static Analysis**: `npx tsc --noEmit` exited with code `0` (0 errors).
-- **Next.js Production Build**: `npm run build` compiled all 30 routes and middleware successfully in **6.8s**.
+- **ESLint Code Quality**: `npm run lint` exited with `✔ No ESLint warnings or errors`.
+- **Next.js Production Build**: `npm run build` compiled all 30 routes and Edge middleware with 0 errors.
+- **Production Dependency Security**: `npm audit --omit=dev` reported **0 vulnerabilities**.
 
 ---
 

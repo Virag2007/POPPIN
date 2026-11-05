@@ -65,19 +65,53 @@ export class ConnectionService {
     };
   }
 
-  static async getFollowers(userId: string, limit = 20, offset = 0) {
+  static async getFollowers(userId: string, limit = 20, offset = 0, viewerId?: string) {
     const user = await UserRepository.findById(userId);
     if (!user) {
       throw new AppError("User not found", 404, "USER_NOT_FOUND");
     }
 
+    if (viewerId) {
+      const isBlocked = await ConnectionRepository.isBlockedOrBlocking(viewerId, userId);
+      if (isBlocked) {
+        throw new AppError("Access restricted", 403, "BLOCKED_USER");
+      }
+    }
+
+    // Backend-enforced privacy: if private account, only owner or confirmed followers may view followers
+    if (user.privacySettings?.isPrivate && viewerId !== userId) {
+      const isFollowing = viewerId
+        ? !!(await ConnectionRepository.findFollow(viewerId, userId))
+        : false;
+      if (!isFollowing) {
+        throw new AppError("This account is private. Follow this user to see their followers.", 403, "PRIVATE_ACCOUNT");
+      }
+    }
+
     return ConnectionRepository.getFollowers(userId, limit, offset);
   }
 
-  static async getFollowing(userId: string, limit = 20, offset = 0) {
+  static async getFollowing(userId: string, limit = 20, offset = 0, viewerId?: string) {
     const user = await UserRepository.findById(userId);
     if (!user) {
       throw new AppError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    if (viewerId) {
+      const isBlocked = await ConnectionRepository.isBlockedOrBlocking(viewerId, userId);
+      if (isBlocked) {
+        throw new AppError("Access restricted", 403, "BLOCKED_USER");
+      }
+    }
+
+    // Backend-enforced privacy: if private account, only owner or confirmed followers may view following
+    if (user.privacySettings?.isPrivate && viewerId !== userId) {
+      const isFollowing = viewerId
+        ? !!(await ConnectionRepository.findFollow(viewerId, userId))
+        : false;
+      if (!isFollowing) {
+        throw new AppError("This account is private. Follow this user to see who they follow.", 403, "PRIVATE_ACCOUNT");
+      }
     }
 
     return ConnectionRepository.getFollowing(userId, limit, offset);

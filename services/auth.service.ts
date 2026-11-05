@@ -173,37 +173,43 @@ export class AuthService {
     };
   }
 
+  static hashResetToken(rawToken: string): string {
+    return crypto.createHash("sha256").update(rawToken).digest("hex");
+  }
+
   static async forgotPassword(email: string) {
+    const isProduction = process.env.NODE_ENV === "production";
     const user = await UserRepository.findByEmail(email);
     if (!user) {
       // Return generic message to prevent account enumeration
       return {
         message: "If an account exists with this email, password reset instructions have been generated.",
-        resetToken: null,
+        ...(isProduction ? {} : { resetToken: null }),
       };
     }
 
-    const token = crypto.randomBytes(32).toString("hex");
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = this.hashResetToken(rawToken);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
 
-    await UserRepository.createPasswordResetToken(user.id, token, expiresAt);
+    // SECURITY: Store only the cryptographically secure SHA-256 hash in the database.
+    // If the database is compromised, the attacker cannot read or use raw reset tokens.
+    await UserRepository.createPasswordResetToken(user.id, tokenHash, expiresAt);
 
+    // SECURITY: In production, reset tokens must ONLY be dispatched via secure email delivery (e.g. Resend, SendGrid, SES).
+    // In dev/test environments, rawToken is attached to the payload strictly for automated testing and client verification.
     return {
       message: "If an account exists with this email, password reset instructions have been generated.",
-      resetToken: token, // Returned for API client / test workflow
+      ...(isProduction ? {} : { resetToken: rawToken }),
     };
   }
 
   static async resetPassword(token: string, newPassword: string) {
-    const resetRecord = await UserRepository.findValidPasswordResetToken(token);
-    if (!resetRecord) {
-      throw new AppError("Invalid or expired password reset token", 400, "INVALID_RESET_TOKEN");
-    }
-
+    const tokenHash = this.hashResetToken(token);
     const passwordHash = await hashPassword(newPassword);
-    // updatePassword increments tokenVersion, which invalidates all prior sessions
-    await UserRepository.updatePassword(resetRecord.userId, passwordHash);
-    await UserRepository.markPasswordResetTokenUsed(resetRecord.id);
+
+    // Atomically consumes reset token and updates password in a single transactional conditional update
+    await UserRepository.consumeResetTokenAndUpdatePassword(tokenHash, passwordHash);
 
     return {
       message: "Password has been successfully reset. You can now log in with your new password.",

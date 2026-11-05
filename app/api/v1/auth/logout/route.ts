@@ -1,6 +1,14 @@
+import { NextRequest } from "next/server";
+import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { UserRepository } from "@/repositories/user.repository";
 import { successResponse } from "@/lib/http/response";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const user = await getOptionalAuthenticatedUser(request);
+  if (user) {
+    await UserRepository.revokeSessions(user.id);
+  }
+
   const response = successResponse({ loggedOut: true }, 200, "Successfully logged out");
   // Clear auth cookie
   response.cookies.set("poppin_token", "", {
@@ -13,4 +21,5 @@ export async function POST() {
 
   return response;
 }
+
 

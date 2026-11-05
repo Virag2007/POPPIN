@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
 import { ProfileService } from "@/services/profile.service";
 import { successResponse, handleRouteError } from "@/lib/http/response";
 
@@ -8,10 +9,10 @@ export async function GET(
 ) {
   try {
     const { username } = await context.params;
-    const profile = await ProfileService.getPublicProfileByUsername(username);
+    const viewer = await getOptionalAuthenticatedUser(request);
+    const profile = await ProfileService.getPublicProfileByUsername(username, viewer?.id);
     return successResponse(profile, 200);
   } catch (error) {
     return handleRouteError(error);
   }
 }
-

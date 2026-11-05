@@ -57,6 +57,9 @@ export interface SafeProfile {
   experience: ExperienceItem[];
   followersCount: number;
   followingCount: number;
+  isPrivate?: boolean;
+  showActivityStatus?: boolean;
+  allowTagging?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

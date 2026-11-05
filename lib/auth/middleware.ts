@@ -89,6 +89,14 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
   return user;
 }
 
+export async function getOptionalAuthenticatedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
+  try {
+    return await getAuthenticatedUser(request);
+  } catch {
+    return null;
+  }
+}
+
 export function checkOwnership(resourceOwnerId: string, currentUserId: string, message = "Access forbidden: you do not own this resource") {
   if (resourceOwnerId !== currentUserId) {
     throw new AppError(message, 403, "FORBIDDEN");

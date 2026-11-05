@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { Prisma } from "@prisma/client";
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -64,6 +65,18 @@ export function handleRouteError(error: unknown) {
 
   if (error instanceof SyntaxError && "message" in error && (error.message.includes("JSON") || error.message.includes("Unexpected"))) {
     return errorResponse("Invalid or malformed JSON payload", 400, "INVALID_JSON");
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      const target = Array.isArray(error.meta?.target)
+        ? (error.meta.target as string[]).join(", ")
+        : String(error.meta?.target || "unique field");
+      return errorResponse(`A record with this ${target} already exists`, 409, "CONFLICT", { target: error.meta?.target });
+    }
+    if (error.code === "P2025") {
+      return errorResponse("The requested record was not found", 404, "NOT_FOUND");
+    }
   }
 
   console.error("Unhandled Route Error:", error);

@@ -1,6 +1,7 @@
 export interface AuthUser {
   id: string;
   email: string;
+  tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -8,6 +9,7 @@ export interface AuthUser {
 export interface JWTPayload {
   userId: string;
   email: string;
+  tokenVersion?: number;
   iat?: number;
   exp?: number;
 }

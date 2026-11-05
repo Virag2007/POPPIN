@@ -19,7 +19,11 @@ export class AuthService {
       passwordHash,
     });
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    });
 
     return {
       user: {
@@ -43,7 +47,11 @@ export class AuthService {
       throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
     }
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    });
 
     return {
       user: {
@@ -56,17 +64,19 @@ export class AuthService {
     };
   }
 
-  static getGoogleOAuthUrl(): string {
+  static getGoogleOAuthUrl(): { url: string; state: string } {
     const clientId = process.env.GOOGLE_CLIENT_ID || "";
     const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/v1/auth/google/callback";
     const scope = encodeURIComponent("openid email profile");
     const state = crypto.randomBytes(16).toString("hex");
 
-    return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(
       clientId
     )}&redirect_uri=${encodeURIComponent(
       redirectUri
     )}&response_type=code&scope=${scope}&state=${state}&access_type=offline&prompt=consent`;
+
+    return { url, state };
   }
 
   static async handleGoogleCallback(code: string) {
@@ -146,7 +156,11 @@ export class AuthService {
       throw new AppError("Failed to resolve user account", 500, "INTERNAL_SERVER_ERROR");
     }
 
-    const token = signToken({ userId: user.id, email: user.email });
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    });
 
     return {
       user: {
@@ -162,7 +176,7 @@ export class AuthService {
   static async forgotPassword(email: string) {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
-      // Return success message anyway to prevent account enumeration
+      // Return generic message to prevent account enumeration
       return {
         message: "If an account exists with this email, password reset instructions have been generated.",
         resetToken: null,
@@ -176,7 +190,7 @@ export class AuthService {
 
     return {
       message: "If an account exists with this email, password reset instructions have been generated.",
-      resetToken: token, // Returned for testing & client workflow
+      resetToken: token, // Returned for API client / test workflow
     };
   }
 
@@ -187,6 +201,7 @@ export class AuthService {
     }
 
     const passwordHash = await hashPassword(newPassword);
+    // updatePassword increments tokenVersion, which invalidates all prior sessions
     await UserRepository.updatePassword(resetRecord.userId, passwordHash);
     await UserRepository.markPasswordResetTokenUsed(resetRecord.id);
 

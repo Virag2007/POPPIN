@@ -40,6 +40,7 @@ export class UserRepository {
       select: {
         id: true,
         email: true,
+        tokenVersion: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -49,11 +50,24 @@ export class UserRepository {
   static async updatePassword(userId: string, passwordHash: string) {
     return prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        tokenVersion: { increment: 1 },
+      },
       select: {
         id: true,
         email: true,
+        tokenVersion: true,
         updatedAt: true,
+      },
+    });
+  }
+
+  static async revokeSessions(userId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        tokenVersion: { increment: 1 },
       },
     });
   }

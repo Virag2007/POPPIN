@@ -4,6 +4,7 @@ import { runPhase3Tests } from "./phase3.test";
 import { runPhase4Tests } from "./phase4.test";
 import { runPhase5Tests } from "./phase5.test";
 import { runE2EIntegrationTests } from "./e2e-integration.test";
+import { runSecurityAuditTests } from "./security-audit.test";
 
 async function runAll() {
   console.log("==================================================");
@@ -19,10 +20,11 @@ async function runAll() {
     await runPhase4Tests();
     await runPhase5Tests();
     await runE2EIntegrationTests();
+    await runSecurityAuditTests();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log("==================================================");
-    console.log(` ALL PHASES & E2E TESTS PASSED in ${elapsed}s! `);
+    console.log(` ALL PHASES, E2E & SECURITY AUDIT PASSED in ${elapsed}s! `);
     console.log("==================================================");
   } catch (error) {
     console.error("Test execution failed:", error);
@@ -31,4 +33,3 @@ async function runAll() {
 }
 
 runAll();
-

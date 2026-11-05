@@ -2,14 +2,30 @@ import { z } from "zod";
 
 export const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
 
+// Enforce strict http/https protocol to prevent Stored XSS via javascript: or data: URIs
+export const safeHttpUrlSchema = z
+  .string()
+  .trim()
+  .url("Must be a valid URL")
+  .refine((val) => {
+    try {
+      const parsed = new URL(val);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Only http:// and https:// URLs are permitted");
+
+export const safeOptionalUrlSchema = safeHttpUrlSchema.optional().or(z.literal(""));
+
 export const createProfileSchema = z.object({
   username: z
     .string()
     .trim()
     .regex(usernameRegex, "Username must be 3-30 characters and contain only letters, numbers, and underscores"),
   displayName: z.string().trim().max(100).optional(),
-  avatar: z.string().url("Avatar must be a valid URL").optional().or(z.literal("")),
-  coverImage: z.string().url("Cover image must be a valid URL").optional().or(z.literal("")),
+  avatar: safeOptionalUrlSchema,
+  coverImage: safeOptionalUrlSchema,
   headline: z.string().trim().max(160).optional(),
   bio: z.string().trim().max(1000).optional(),
   location: z.string().trim().max(100).optional(),
@@ -17,8 +33,8 @@ export const createProfileSchema = z.object({
 
 export const updateProfileSchema = z.object({
   displayName: z.string().trim().max(100).optional(),
-  avatar: z.string().url("Avatar must be a valid URL").optional().or(z.literal("")),
-  coverImage: z.string().url("Cover image must be a valid URL").optional().or(z.literal("")),
+  avatar: safeOptionalUrlSchema,
+  coverImage: safeOptionalUrlSchema,
   headline: z.string().trim().max(160).optional(),
   bio: z.string().trim().max(1000).optional(),
   location: z.string().trim().max(100).optional(),
@@ -34,7 +50,7 @@ export const updateInterestsSchema = z.object({
 
 export const linkItemSchema = z.object({
   title: z.string().trim().min(1).max(50),
-  url: z.string().trim().url("Must be a valid URL"),
+  url: safeHttpUrlSchema,
 });
 
 export const updateLinksSchema = z.object({
@@ -77,4 +93,3 @@ export type UpdateInterestsInput = z.infer<typeof updateInterestsSchema>;
 export type UpdateLinksInput = z.infer<typeof updateLinksSchema>;
 export type UpdateEducationInput = z.infer<typeof updateEducationSchema>;
 export type UpdateExperienceInput = z.infer<typeof updateExperienceSchema>;
-

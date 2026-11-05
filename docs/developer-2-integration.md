@@ -74,3 +74,4 @@ Identity, Follow Data, Privacy, and Blocking Contracts for Developer 2 (Posts, F
 - **Private Profiles**: When `isPrivate == true`, Developer 2 should restrict post/media access to users who are confirmed followers.
 - **Activity Status**: If `showActivityStatus == false`, real-time presence/last seen should be hidden in messaging.
 - **Tagging**: If `allowTagging == false`, disallow tagging this user in posts or comments.
+

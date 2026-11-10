@@ -1,3 +1,10 @@
+import { runPhase0ContractTests } from "./phase0-contracts.test";
+import { runPhase1PostsTests } from "./phase1-posts.test";
+import { runPhase2EngagementTests } from "./phase2-engagement.test";
+import { runPhase3FeedTests } from "./phase3-feed.test";
+import { runPhase4MessagingTests } from "./phase4-messaging.test";
+import { runPhase5NotificationsTests } from "./phase5-notifications.test";
+import { runPhase6IntegrationTests } from "./phase6-integration.test";
 import { runPhase1Tests } from "./phase1.test";
 import { runPhase2Tests } from "./phase2.test";
 import { runPhase3Tests } from "./phase3.test";
@@ -14,6 +21,13 @@ async function runAll() {
   const start = Date.now();
 
   try {
+    await runPhase0ContractTests();
+    await runPhase1PostsTests();
+    await runPhase2EngagementTests();
+    await runPhase3FeedTests();
+    await runPhase4MessagingTests();
+    await runPhase5NotificationsTests();
+    await runPhase6IntegrationTests();
     await runPhase1Tests();
     await runPhase2Tests();
     await runPhase3Tests();

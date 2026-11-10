@@ -64,3 +64,6 @@ export interface SafeProfile {
   updatedAt: Date;
 }
 
+export * from "./content-communication";
+
+

@@ -35,6 +35,16 @@ model User {
   // Reports
   reportsSubmitted UserReport[] @relation("Reporter")
   reportsReceived  UserReport[] @relation("ReportedUser")
+
+  // Developer 2: Content & Communication
+  posts                  Post[]
+  likes                  Like[]
+  comments               Comment[]
+  savedPosts             SavedPost[]
+  conversationMembers    ConversationMember[]
+  messagesSent           Message[]
+  notificationsReceived  Notification[] @relation("NotificationRecipient")
+  notificationsTriggered Notification[] @relation("NotificationActor")
 }
 
 model PasswordResetToken {
@@ -137,3 +147,136 @@ model UserReport {
   @@index([reportedUserId])
   @@index([reporterId])
 }
+
+// ==========================================
+// DEVELOPER 2: CONTENT & COMMUNICATION MODELS
+// ==========================================
+
+model Post {
+  id        String      @id @default(uuid())
+  authorId  String
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  type      String      // UPDATE, PROJECT_SHOWCASE, ACHIEVEMENT, LOOKING_FOR
+  links     String      @default("[]") // JSON string of ExternalLinkItem[]
+  tags      String      @default("[]") // JSON string of string[]
+  media     PostMedia[]
+  likes     Like[]
+  comments  Comment[]
+  saves     SavedPost[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostMedia {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url       String
+  key       String?
+  mimeType  String?
+  size      Int?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Comment {
+  id                String    @id @default(uuid())
+  postId            String
+  post              Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId          String
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content           String
+  replyToCommentId  String?
+  parentComment     Comment?  @relation("CommentReplies", fields: [replyToCommentId], references: [id], onDelete: Cascade)
+  replies           Comment[] @relation("CommentReplies")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([replyToCommentId])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model Conversation {
+  id        String               @id @default(uuid())
+  isGroup   Boolean              @default(false)
+  name      String?
+  avatar    String?
+  members   ConversationMember[]
+  messages  Message[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model ConversationMember {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("MEMBER") // ADMIN, MEMBER
+  lastReadAt     DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  recipientId String
+  recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  type        String   // POST_LIKE, POST_COMMENT, NEW_FOLLOWER, NEW_MESSAGE
+  entityId    String?  // Reference ID (postId, commentId, conversationId)
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId, isRead])
+  @@index([createdAt])
+}
+

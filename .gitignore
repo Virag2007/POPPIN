@@ -38,3 +38,7 @@ next-env.d.ts
 /prisma/*.db-journal
 prisma/dev.db
 
+# agents & local skills
+.agents/
+
+

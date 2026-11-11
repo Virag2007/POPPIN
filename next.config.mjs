@@ -1,9 +1,20 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isProd = process.env.NODE_ENV === "production";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: __dirname,
   reactStrictMode: true,
-  poweredByHeader: false, // Prevents X-Powered-By: Next.js information disclosure
+  poweredByHeader: false,
 
   async headers() {
+    if (!isProd) {
+      return [];
+    }
+
     return [
       {
         source: "/:path*",
@@ -13,9 +24,9 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "font-src 'self' data:",
               "connect-src 'self' https:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
@@ -37,10 +48,6 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
           },
         ],
       },

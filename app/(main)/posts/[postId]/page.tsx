@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PostService } from "@/services/post.service";
 import { PostDetail } from "@/components/posts/post-detail";
 import { AppError } from "@/lib/http/response";
+import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 interface PostPageProps {
   params: Promise<{ postId: string }>;
@@ -16,7 +17,7 @@ export default async function PostPage({ params }: PostPageProps) {
     const post = await PostService.getPost(postId);
 
     return (
-      <main className="min-h-screen bg-gray-50 py-8">
+      <main className="min-h-screen bg-slate-50/70 py-8">
         <PostDetail initialPost={post} />
       </main>
     );
@@ -28,27 +29,23 @@ export default async function PostPage({ params }: PostPageProps) {
 
       if (error.statusCode === 403) {
         return (
-          <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white border border-gray-200 rounded-xl p-8 max-w-md w-full text-center shadow-sm">
-              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
+          <main className="min-h-screen bg-slate-50/70 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-8 max-w-md w-full text-center shadow-xs">
+              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200">
+                <ShieldAlert className="w-6 h-6" />
               </div>
-              <h2 className="text-base font-semibold text-gray-900 mb-2">Post Unavailable</h2>
-              <p className="text-xs text-gray-500 mb-6">
+              <h2 className="font-heading text-lg font-bold text-slate-900 mb-2">
+                Post Restricted
+              </h2>
+              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
                 {error.message || "This content is from a private profile or is restricted."}
               </p>
               <Link
-                href="/"
-                className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                href="/feed"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-poppin-navy text-white rounded-xl text-xs font-bold hover:bg-poppin-navy/90 transition shadow-2xs"
               >
-                Return to Home
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Return to Feed
               </Link>
             </div>
           </main>
@@ -59,4 +56,3 @@ export default async function PostPage({ params }: PostPageProps) {
     throw error;
   }
 }
-

@@ -181,20 +181,20 @@ export function ChatWindow({
   const isGroupAdmin = conversation.isGroup && currentUserRole === "ADMIN";
 
   return (
-    <div className="flex flex-col h-[650px] bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[680px] bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
         <div>
-          <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+          <h3 className="font-heading font-bold text-slate-900 text-sm flex items-center gap-2">
             <span>{headerTitle}</span>
             {conversation.isGroup && (
-              <span className="text-3xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-poppin-lilac/10 text-poppin-lilac font-semibold">
                 {conversation.members.length} members
               </span>
             )}
           </h3>
-          <span className="text-3xs text-gray-400">
-            {conversation.isGroup ? "Group Conversation" : "Direct Messages"}
+          <span className="text-[11px] text-slate-400 font-mono">
+            {conversation.isGroup ? "Group Hub" : "Direct Conversation"}
           </span>
         </div>
 
@@ -202,7 +202,7 @@ export function ChatWindow({
           <button
             type="button"
             onClick={onOpenGroupManage}
-            className="px-3 py-1.5 text-xs text-gray-700 hover:text-gray-900 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs"
+            className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-poppin-navy bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-2xs"
           >
             {isGroupAdmin ? "Manage Group" : "Group Info"}
           </button>
@@ -210,7 +210,7 @@ export function ChatWindow({
       </div>
 
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/30">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
         {hasMore && (
           <div className="text-center py-2">
             <button
@@ -243,15 +243,15 @@ export function ChatWindow({
                   </span>
                 )}
                 <div
-                  className={`max-w-[75%] px-3.5 py-2 rounded-2xl text-xs leading-relaxed ${
+                  className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
                     isSelf
-                      ? "bg-blue-600 text-white rounded-br-xs shadow-2xs"
-                      : "bg-white border border-gray-200 text-gray-800 rounded-bl-xs shadow-2xs"
+                      ? "bg-poppin-navy text-white rounded-br-xs shadow-xs"
+                      : "bg-white border border-slate-200/80 text-slate-800 rounded-bl-xs shadow-xs"
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.content}</p>
                 </div>
-                <span className="text-3xs text-gray-400 mt-1 px-1">
+                <span className="text-[10px] text-slate-400 mt-1 px-1 font-mono">
                   {new Date(msg.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -264,11 +264,11 @@ export function ChatWindow({
 
         {/* Typing Indicator */}
         {typingUsers.size > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-400 italic py-1 px-2">
-            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
-            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
-            <span className="ml-1 text-2xs">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 py-1 px-2 font-mono">
+            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce" />
+            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-delay:0.2s]" />
+            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-delay:0.4s]" />
+            <span className="ml-1 text-[11px]">
               {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing...
             </span>
           </div>
@@ -278,19 +278,19 @@ export function ChatWindow({
       </div>
 
       {/* Input Bar */}
-      <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-100 bg-white flex gap-2">
+      <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-100 bg-white flex gap-2">
         <input
           type="text"
           value={inputText}
           onChange={handleInputChange}
-          placeholder="Type a message..."
+          placeholder="Type a message... (Enter to send)"
           maxLength={4000}
-          className="flex-1 p-2.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 focus:bg-white transition-colors"
+          className="flex-1 p-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-poppin-lilac bg-slate-50 focus:bg-white transition-colors"
         />
         <button
           type="submit"
           disabled={!inputText.trim() || isSending}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-2xs"
+          className="px-4 py-2.5 bg-poppin-navy text-white rounded-xl text-xs font-bold hover:bg-poppin-navy/90 disabled:opacity-40 transition shadow-2xs active:scale-95"
         >
           Send
         </button>

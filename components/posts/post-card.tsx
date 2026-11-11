@@ -5,6 +5,18 @@ import Link from "next/link";
 import { PostResponse, PostType } from "@/types";
 import { LikeButton } from "@/components/engagement/like-button";
 import { SaveButton } from "@/components/engagement/save-button";
+import {
+  MessageSquare,
+  Share2,
+  Check,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  Sparkles,
+  Flame,
+  Award,
+  HelpCircle,
+} from "lucide-react";
 
 interface PostCardProps {
   post: PostResponse;
@@ -16,23 +28,27 @@ interface PostCardProps {
 
 const POST_TYPE_CONFIG: Record<
   PostType,
-  { label: string; badgeClass: string }
+  { label: string; badgeClass: string; icon: React.ElementType }
 > = {
   UPDATE: {
     label: "Update",
-    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+    icon: Sparkles,
   },
   PROJECT_SHOWCASE: {
     label: "Project Showcase",
-    badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
+    badgeClass: "bg-poppin-lilac/10 text-poppin-lilac border-poppin-lilac/20 font-bold",
+    icon: Flame,
   },
   ACHIEVEMENT: {
     label: "Achievement",
-    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-bold",
+    icon: Award,
   },
   LOOKING_FOR: {
     label: "Looking for...",
-    badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-bold",
+    icon: HelpCircle,
   },
 };
 
@@ -42,6 +58,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
 
   const isOwner = Boolean(currentUserId && currentUserId === post.authorId);
   const typeConfig = POST_TYPE_CONFIG[post.type] || POST_TYPE_CONFIG.UPDATE;
+  const BadgeIcon = typeConfig.icon;
 
   const handleShare = async () => {
     try {
@@ -73,23 +90,22 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
   const formattedDate = new Date(post.createdAt).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
   });
 
   return (
-    <article className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow transition-shadow p-5 mb-4">
+    <article className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all p-5 sm:p-6 mb-4">
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-3.5">
         <div className="flex items-center gap-3">
           {post.author.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={post.author.avatar}
               alt={post.author.displayName || post.author.username}
-              className="w-10 h-10 rounded-full object-cover border border-gray-100"
+              className="w-10 h-10 rounded-2xl object-cover ring-2 ring-slate-100"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
+            <div className="w-10 h-10 rounded-2xl bg-poppin-lilac-light text-poppin-lilac border border-poppin-lilac-border flex items-center justify-center font-bold text-xs font-mono">
               {authorInitials}
             </div>
           )}
@@ -97,46 +113,40 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
             <div className="flex items-center gap-2">
               <Link
                 href={`/profiles/${encodeURIComponent(post.author.username)}`}
-                className="font-semibold text-gray-900 hover:underline text-sm"
+                className="font-heading font-bold text-slate-900 hover:text-poppin-lilac transition text-sm"
               >
                 {post.author.displayName || post.author.username}
               </Link>
-              <span className="text-gray-400 text-xs">@{post.author.username}</span>
+              <span className="text-slate-400 font-mono text-xs">@{post.author.username}</span>
             </div>
             {post.author.headline && (
-              <p className="text-xs text-gray-500 line-clamp-1">{post.author.headline}</p>
+              <p className="text-xs text-slate-500 line-clamp-1">{post.author.headline}</p>
             )}
-            <span className="text-xs text-gray-400">{formattedDate}</span>
+            <span className="text-[11px] text-slate-400 font-mono">{formattedDate}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Post Type Badge */}
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeConfig.badgeClass}`}
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${typeConfig.badgeClass}`}
           >
+            <BadgeIcon className="w-3 h-3" />
             {typeConfig.label}
           </span>
 
           {/* Owner Actions */}
           {isOwner && (
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1 ml-1">
               {onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(post)}
-                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors text-xs"
+                  className="p-1.5 text-slate-400 hover:text-poppin-navy rounded-lg hover:bg-slate-100 transition text-xs"
                   title="Edit post"
                   aria-label="Edit post"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
+                  <Pencil className="w-3.5 h-3.5" />
                 </button>
               )}
               {onDelete && (
@@ -144,18 +154,11 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="p-1.5 text-red-400 hover:text-red-700 rounded-lg hover:bg-red-50 transition-colors text-xs disabled:opacity-50"
+                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition text-xs disabled:opacity-50"
                   title="Delete post"
                   aria-label="Delete post"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -164,14 +167,14 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
       </div>
 
       {/* Content */}
-      <div className="text-gray-800 text-sm whitespace-pre-line leading-relaxed mb-4">
+      <div className="text-slate-800 text-sm whitespace-pre-line leading-relaxed mb-4">
         {post.content}
       </div>
 
       {/* Media Images Gallery */}
       {post.media && post.media.length > 0 && (
         <div
-          className={`grid gap-2 mb-4 rounded-lg overflow-hidden ${
+          className={`grid gap-2 mb-4 rounded-2xl overflow-hidden ${
             post.media.length === 1
               ? "grid-cols-1"
               : post.media.length === 2
@@ -182,7 +185,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {post.media.map((item) => (
             <div
               key={item.id}
-              className="relative aspect-video bg-gray-100 rounded-md overflow-hidden group border border-gray-200"
+              className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden group border border-slate-200/80"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -205,18 +208,15 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xs text-blue-600 transition-colors"
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-xs transition group"
             >
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                />
-              </svg>
-              <span className="font-medium text-gray-800 line-clamp-1">{link.title}</span>
-              <span className="text-gray-400 ml-auto text-2xs truncate max-w-xs">{link.url}</span>
+              <ExternalLink className="w-3.5 h-3.5 text-poppin-lilac shrink-0" />
+              <span className="font-semibold text-slate-800 group-hover:text-poppin-lilac line-clamp-1">
+                {link.title}
+              </span>
+              <span className="text-slate-400 ml-auto font-mono text-[10px] truncate max-w-xs">
+                {link.url}
+              </span>
             </a>
           ))}
         </div>
@@ -228,7 +228,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {post.tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-poppin-lilac-light text-poppin-navy border border-poppin-lilac-border hover:bg-poppin-lilac/20 transition-colors"
             >
               #{tag}
             </span>
@@ -237,7 +237,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
       )}
 
       {/* Footer / Interaction Bar */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs text-gray-500">
+      <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500">
         <div className="flex items-center gap-3">
           {/* Like Button */}
           <LikeButton
@@ -250,16 +250,9 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {/* Comments Button */}
           <Link
             href={`/posts/${post.id}`}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-poppin-navy hover:bg-slate-100 transition"
           >
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
+            <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
             <span>{post.commentsCount}</span>
           </Link>
 
@@ -276,22 +269,23 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 hover:text-poppin-navy hover:bg-slate-100 transition text-xs font-semibold"
             title="Copy share link"
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-            <span>{copiedShare ? "Link copied!" : "Share"}</span>
+            {copiedShare ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-700">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                <span>Share</span>
+              </>
+            )}
           </button>
         </div>
       </div>
     </article>
   );
 }
-

@@ -46,10 +46,10 @@ export function ConversationItem({
   return (
     <Link
       href={`/messages/${conversation.id}`}
-      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+      className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${
         isActive
-          ? "bg-blue-50 border border-blue-200"
-          : "hover:bg-gray-50 border border-transparent"
+          ? "bg-poppin-lilac-light/80 border border-poppin-lilac-border shadow-2xs"
+          : "hover:bg-slate-50 border border-transparent"
       }`}
     >
       {avatar ? (
@@ -57,35 +57,31 @@ export function ConversationItem({
         <img
           src={avatar}
           alt={title}
-          className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-100"
+          className="w-10 h-10 rounded-2xl object-cover shrink-0 ring-1 ring-slate-200"
         />
       ) : (
-        <div
-          className={`w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 ${
-            conversation.isGroup ? "bg-purple-600" : "bg-blue-600"
-          }`}
-        >
+        <div className="w-10 h-10 rounded-2xl bg-poppin-lilac-light text-poppin-lilac border border-poppin-lilac-border flex items-center justify-center font-bold text-xs shrink-0 font-mono">
           {initials}
         </div>
       )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <h4 className="text-xs font-semibold text-gray-900 truncate flex items-center gap-1.5">
+          <h4 className="text-xs font-heading font-bold text-slate-900 truncate flex items-center gap-1.5">
             <span>{title}</span>
             {conversation.isGroup && (
-              <span className="px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 text-3xs font-medium">
+              <span className="px-1.5 py-0.5 rounded-full bg-poppin-lilac/10 text-poppin-lilac text-[10px] font-semibold">
                 Group
               </span>
             )}
           </h4>
-          {formattedDate && <span className="text-3xs text-gray-400">{formattedDate}</span>}
+          {formattedDate && <span className="text-[10px] text-slate-400 font-mono">{formattedDate}</span>}
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-2xs text-gray-500 truncate mr-2">{lastMessageSnippet}</p>
+          <p className="text-xs text-slate-500 truncate mr-2 leading-relaxed">{lastMessageSnippet}</p>
           {conversation.unreadCount > 0 && (
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-3xs font-bold bg-blue-600 text-white shrink-0">
+            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-poppin-lilac text-white shrink-0">
               {conversation.unreadCount}
             </span>
           )}
@@ -94,4 +90,3 @@ export function ConversationItem({
     </Link>
   );
 }
-

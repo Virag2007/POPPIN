@@ -47,6 +47,7 @@ model User {
   notificationsTriggered Notification[] @relation("NotificationActor")
   communityMemberships   CommunityMember[]
   media                  Media[]
+  messageReceipts        MessageReceipt[]
 }
 
 model PasswordResetToken {
@@ -235,7 +236,9 @@ model SavedPost {
 model Conversation {
   id        String               @id @default(uuid())
   isGroup   Boolean              @default(false)
+  type      String               @default("DIRECT") // DIRECT or GROUP
   name      String?
+  title     String?
   avatar    String?
   members   ConversationMember[]
   messages  Message[]
@@ -244,30 +247,70 @@ model Conversation {
 }
 
 model ConversationMember {
-  id             String       @id @default(uuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           String       @default("MEMBER") // ADMIN, MEMBER
-  lastReadAt     DateTime     @default(now())
-  createdAt      DateTime     @default(now())
+  id                 String       @id @default(uuid())
+  conversationId     String
+  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role               String       @default("MEMBER") // ADMIN, MEMBER
+  lastReadAt         DateTime     @default(now())
+  lastReadMessageId  String?
+  createdAt          DateTime     @default(now())
 
   @@unique([conversationId, userId])
   @@index([userId])
 }
 
 model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  content        String
-  createdAt      DateTime     @default(now())
+  id              String              @id @default(uuid())
+  conversationId  String
+  conversation    Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  clientMessageId String?
+  content         String
+  type            String              @default("TEXT") // TEXT, IMAGE, FILE, SYSTEM
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
+  deletedAt       DateTime?
+  receipts        MessageReceipt[]
+  attachments     MessageAttachment[]
 
+  @@unique([senderId, clientMessageId])
   @@index([conversationId, createdAt])
   @@index([senderId])
+}
+
+model MessageReceipt {
+  id          String    @id @default(uuid())
+  messageId   String
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([messageId, userId])
+  @@index([userId])
+  @@index([messageId])
+}
+
+model MessageAttachment {
+  id           String   @id @default(uuid())
+  messageId    String
+  message      Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  mediaId      String?
+  publicId     String?
+  secureUrl    String
+  resourceType String   @default("image")
+  format       String?
+  width        Int?
+  height       Int?
+  bytes        Int?
+  createdAt    DateTime @default(now())
+
+  @@index([messageId])
 }
 
 model Notification {

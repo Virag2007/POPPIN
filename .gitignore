@@ -1,5 +1,8 @@
 # dependencies
+node_modules/
 /node_modules
+realtime-server/node_modules/
+realtime-server/dist/
 /.pnp
 .pnp.js
 

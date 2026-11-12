@@ -18,6 +18,7 @@ import { runSecurityAuditTests } from "./security-audit.test";
 import { runPhase7CommunitiesSearchTests } from "./phase7-communities-search.test";
 import { runCloudinaryIntegrationTests } from "./cloudinary-integration.test";
 import { runLivePostgresVerification } from "./test-live-postgres";
+import { runRealtimeSocketTests } from "./realtime-socket.test";
 
 async function runAll() {
   console.log("==================================================");
@@ -44,6 +45,7 @@ async function runAll() {
     await runPhase7CommunitiesSearchTests();
     await runCloudinaryIntegrationTests();
     await runLivePostgresVerification();
+    await runRealtimeSocketTests();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log("==================================================");

@@ -37,7 +37,7 @@ export default function RootLayout({
         <meta name="site-kind" content="software" />
         <meta name="page-type" content="software" />
       </head>
-      <body className="font-sans antialiased bg-[#F8FAFC] text-slate-900 min-h-screen flex flex-col selection:bg-poppin-lilac selection:text-white">
+      <body className="font-sans antialiased bg-[var(--surface-ground)] text-slate-900 min-h-screen flex flex-col selection:bg-poppin-lilac selection:text-white">
         {/* WCAG 2.4.1: Bypass Blocks */}
         <a
           href="#main-content"

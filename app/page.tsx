@@ -165,7 +165,7 @@ export default function HomePage() {
   ];
 
   return (
-    <main id="main-content" ref={heroRef} className="flex-1 flex flex-col bg-[#F8FAFC]">
+    <main id="main-content" ref={heroRef} className="flex-1 flex flex-col bg-[var(--surface-ground)]">
       {/* Search Modal Accessible Globally & From Hero */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
@@ -180,7 +180,7 @@ export default function HomePage() {
           }}
         />
 
-        <div className="relative max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="relative max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
             {/* Left Column: Heading, Search & Actions */}
@@ -203,7 +203,7 @@ export default function HomePage() {
               <div className="hero-search-box mt-7 w-full max-w-xl">
                 <form
                   onSubmit={handleHeroSearch}
-                  className="relative flex items-center p-1.5 rounded-2xl bg-slate-50 border border-slate-300 shadow-2xs focus-within:border-poppin-lilac focus-within:ring-2 focus-within:ring-poppin-lilac/20 transition-all"
+                  className="relative flex items-center p-1.5 rounded-2xl bg-slate-50 border border-slate-300 shadow-2xs focus-within:border-poppin-lilac focus-within:ring-2 focus-within:ring-poppin-lilac/20 transition-colors"
                 >
                   <div className="pl-3 text-slate-400 flex items-center pointer-events-none">
                     <Search className="w-5 h-5 text-poppin-lilac" />
@@ -217,7 +217,7 @@ export default function HomePage() {
                   />
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shrink-0 active:scale-95"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors shrink-0 active:scale-95"
                   >
                     <span>Search</span>
                     <ArrowRight className="w-4 h-4 text-poppin-lilac" />
@@ -260,37 +260,37 @@ export default function HomePage() {
                   <>
                     <Link
                       href="/feed"
-                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-bold text-sm shadow-xs transition-all active:scale-[0.98]"
+                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-bold text-sm shadow-xs transition-colors active:scale-[0.98]"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>Go to Feed</span>
+                      <span>Go to feed</span>
                     </Link>
                     <Link
                       href="/communities"
-                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-all active:scale-[0.98]"
+                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-colors active:scale-[0.98]"
                     >
                       <Layers className="w-4 h-4 text-poppin-lilac" />
-                      <span>Browse Communities</span>
+                      <span>Browse communities</span>
                     </Link>
                   </>
                 ) : (
                   <>
                     <Link
                       href="/register"
-                      className="min-h-[46px] inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-extrabold text-sm shadow-xs transition-all active:scale-[0.98]"
+                      className="min-h-[46px] inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-extrabold text-sm shadow-xs transition-colors active:scale-[0.98]"
                     >
-                      <span>Join the Community</span>
+                      <span>Join POPPIN</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                     <Link
                       href="/login"
-                      className="min-h-[46px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-all active:scale-[0.98]"
+                      className="min-h-[46px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-colors active:scale-[0.98]"
                     >
-                      Sign In
+                      Sign in
                     </Link>
                     <Link
                       href="/communities"
-                      className="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-slate-600 hover:text-poppin-lilac font-semibold text-sm transition-all"
+                      className="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-slate-600 hover:text-poppin-lilac font-semibold text-sm transition-colors"
                     >
                       <span>Explore without account</span>
                       <ArrowUpRight className="w-4 h-4" />
@@ -303,7 +303,7 @@ export default function HomePage() {
             {/* Right Column: Live Product Artifact & Handle Claim */}
             <div className="lg:col-span-5 flex flex-col gap-4">
               {/* Reddit-Style Live Preview Card */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition-all duration-200">
+              <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition-[box-shadow,transform] duration-200">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -430,7 +430,7 @@ export default function HomePage() {
             <Link
               key={hub.slug}
               href={`/communities/${hub.slug}`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200/90 hover:border-poppin-lilac/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+              className="group bg-white p-5 rounded-2xl border border-slate-200/90 hover:border-poppin-lilac/40 hover:-translate-y-0.5 hover:shadow-md transition-[transform,box-shadow] duration-200 flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center gap-3.5 mb-3.5">
@@ -479,7 +479,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-[transform,box-shadow] duration-200">
               <div className="w-10 h-10 rounded-xl bg-poppin-lilac-light text-poppin-lilac flex items-center justify-center mb-4">
                 <Zap className="w-5 h-5" />
               </div>
@@ -489,7 +489,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-[transform,box-shadow] duration-200">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
                 <Layers className="w-5 h-5" />
               </div>
@@ -499,7 +499,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-[transform,box-shadow] duration-200">
               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
                 <Globe2 className="w-5 h-5" />
               </div>

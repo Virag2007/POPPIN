@@ -1,18 +1,62 @@
+/* Hallmark Design Floor System */
+:root {
+  --brand-primary: #2563EB;
+  --brand-hover: #1D4ED8;
+  --brand-light: #EFF6FF;
+  --brand-border: #BFDBFE;
+  --surface-ground: #F8FAFC;
+  --surface-card: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --border-subtle: #E2E8F0;
+  --focus-ring: #2563EB;
+  --bg-subtle: #F4F6F8;
+  --bg-light: #DAE0E6;
+  --text-dark: #1C1C1C;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html {
+html, body {
+  overflow-x: clip;
   scroll-behavior: smooth;
 }
 
 @layer base {
   body {
-    @apply bg-[#F4F6F8] text-[#1E293B] font-sans antialiased;
+    @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased;
   }
 
   ::selection {
-    @apply bg-poppin-lilac-light text-poppin-navy;
+    @apply bg-blue-100 text-blue-900;
+  }
+
+  /* Hallmark Floor 5: Display heads carry overflow-wrap */
+  h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+    min-width: 0;
+  }
+
+  /* Hallmark Floor 6: Instant focus-visible on interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Hallmark Floor 7: prefers-reduced-motion fallback */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

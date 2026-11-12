@@ -41,6 +41,10 @@ export default function OwnProfilePage() {
   const [location, setLocation] = useState("");
   const [avatar, setAvatar] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [avatarDrag, setAvatarDrag] = useState(false);
+  const [coverDrag, setCoverDrag] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -732,30 +736,214 @@ export default function OwnProfilePage() {
                 />
               </div>
 
+              {/* Avatar Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Avatar Image URL
+                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
+                  Profile Avatar
                 </label>
-                <input
-                  type="url"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none"
-                />
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setAvatarDrag(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setAvatarDrag(false);
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    setAvatarDrag(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file && file.type.startsWith("image/")) {
+                      setIsUploadingAvatar(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const headers: Record<string, string> = {};
+                        if (token) headers["Authorization"] = `Bearer ${token}`;
+                        const res = await fetch("/api/v1/media/upload", {
+                          method: "POST",
+                          headers,
+                          body: formData,
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) setAvatar(data.data.url);
+                      } catch (err) {
+                        console.error("Avatar upload failed:", err);
+                      } finally {
+                        setIsUploadingAvatar(false);
+                      }
+                    }
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all flex items-center gap-4 ${
+                    avatarDrag
+                      ? "border-dashed border-poppin-lilac bg-poppin-lilac-light/50"
+                      : "border-slate-200 bg-slate-50 hover:bg-slate-100/60"
+                  }`}
+                >
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-300 relative">
+                    {avatar ? (
+                      <img src={avatar} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold">
+                        No Image
+                      </div>
+                    )}
+                    {isUploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-slate-700">
+                      {isUploadingAvatar ? "Uploading avatar..." : "Drag and drop photo here"}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">PNG, JPG, WebP up to 10MB</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <label className="cursor-pointer px-3 py-1 bg-white border border-slate-300 hover:border-slate-400 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs transition">
+                        <span>Browse File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setIsUploadingAvatar(true);
+                              try {
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                const headers: Record<string, string> = {};
+                                if (token) headers["Authorization"] = `Bearer ${token}`;
+                                const res = await fetch("/api/v1/media/upload", {
+                                  method: "POST",
+                                  headers,
+                                  body: formData,
+                                });
+                                const data = await res.json();
+                                if (res.ok && data.success) setAvatar(data.data.url);
+                              } catch (err) {
+                                console.error("Avatar upload failed:", err);
+                              } finally {
+                                setIsUploadingAvatar(false);
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                      {avatar && (
+                        <button
+                          type="button"
+                          onClick={() => setAvatar("")}
+                          className="text-xs text-rose-600 hover:underline font-semibold"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Cover Image Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Cover Image URL
+                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
+                  Profile Banner Cover
                 </label>
-                <input
-                  type="url"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none"
-                />
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setCoverDrag(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setCoverDrag(false);
+                  }}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    setCoverDrag(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file && file.type.startsWith("image/")) {
+                      setIsUploadingCover(true);
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        const headers: Record<string, string> = {};
+                        if (token) headers["Authorization"] = `Bearer ${token}`;
+                        const res = await fetch("/api/v1/media/upload", {
+                          method: "POST",
+                          headers,
+                          body: formData,
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) setCoverImage(data.data.url);
+                      } catch (err) {
+                        console.error("Cover upload failed:", err);
+                      } finally {
+                        setIsUploadingCover(false);
+                      }
+                    }
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col gap-2 ${
+                    coverDrag
+                      ? "border-dashed border-poppin-lilac bg-poppin-lilac-light/50"
+                      : "border-slate-200 bg-slate-50 hover:bg-slate-100/60"
+                  }`}
+                >
+                  {coverImage ? (
+                    <div className="relative h-24 w-full rounded-lg overflow-hidden border border-slate-300">
+                      <img src={coverImage} alt="Cover Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setCoverImage("")}
+                        className="absolute top-2 right-2 p-1 bg-black/60 hover:bg-black text-white rounded-md text-xs font-semibold"
+                      >
+                        ✕ Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-700">
+                          {isUploadingCover ? "Uploading banner..." : "Drag and drop banner image here"}
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Recommended 1200x300, max 10MB</p>
+                      </div>
+                      <label className="cursor-pointer px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 rounded-lg text-xs font-semibold text-slate-700 shadow-2xs transition">
+                        <span>Browse File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setIsUploadingCover(true);
+                              try {
+                                const formData = new FormData();
+                                formData.append("file", file);
+                                const headers: Record<string, string> = {};
+                                if (token) headers["Authorization"] = `Bearer ${token}`;
+                                const res = await fetch("/api/v1/media/upload", {
+                                  method: "POST",
+                                  headers,
+                                  body: formData,
+                                });
+                                const data = await res.json();
+                                if (res.ok && data.success) setCoverImage(data.data.url);
+                              } catch (err) {
+                                console.error("Cover upload failed:", err);
+                              } finally {
+                                setIsUploadingCover(false);
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-3">

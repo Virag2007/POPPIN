@@ -5,12 +5,11 @@ import React, { useState, use } from "react";
 import Link from "next/link";
 import { Community, FeedPost } from "@/types";
 import { INITIAL_COMMUNITIES } from "@/lib/mock-communities";
-import { PostComposer, PostCard } from "@/components/feed";
+import { PostComposer } from "@/components/feed";
 import {
   ArrowLeft,
   Users,
   ShieldCheck,
-  Sparkles,
   Share2,
   CheckCircle2,
   Plus,
@@ -18,7 +17,15 @@ import {
   MessageSquare,
   ExternalLink,
   Flame,
+  Sparkles,
   Award,
+  ChevronUp,
+  ChevronDown,
+  Bookmark,
+  Calendar,
+  Check,
+  Mail,
+  Send,
 } from "lucide-react";
 
 interface CommunitySlugParams {
@@ -42,55 +49,59 @@ export default function CommunityDetailPage({
       .split("-")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" "),
-    tagline: "A vibrant collective exploring cutting-edge ideas and collaboration.",
-    description: `Welcome to the official hub for ${resolvedParams.slug}. Share insights, ask architectural questions, and showcase high-craft projects with fellow peers.`,
+    tagline: "A vibrant subreddit exploring cutting-edge discussions and craft.",
+    description: `Welcome to the official hub for r/${resolvedParams.slug}. Share insights, ask questions, and showcase high-craft projects with fellow members.`,
     category: "General",
     avatar:
       "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80",
     coverImage:
       "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80",
-    membersCount: 142,
+    membersCount: 428,
     isMember: false,
     rules: [
       "Critique work constructively and uphold community standards.",
-      "No spam or unsolicited self-promotion without context.",
-      "Maintain respectful and inclusive discourse.",
+      "No spam, unsolicited self-promotion, or low-effort submissions.",
+      "Maintain respectful and inclusive discourse at all times.",
+      "Use descriptive titles and add appropriate flairs.",
     ],
     moderators: [
       { id: "alex", username: "alex_design", displayName: "Alex Rivera" },
+      { id: "sarah", username: "sarah_code", displayName: "Sarah Chen" },
     ],
   };
 
   const [community, setCommunity] = useState<Community>(communityData);
-  const [activeTab, setActiveTab] = useState<
-    "discussions" | "showcase" | "rules" | "members"
-  >("discussions");
+  const [activeSort, setActiveSort] = useState<"hot" | "new" | "top">("hot");
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Mock community discussion posts
-  const [communityPosts, setCommunityPosts] = useState<FeedPost[]>([
+  // Reddit-style discussion posts with upvotes/downvotes
+  const [posts, setPosts] = useState<
+    (FeedPost & {
+      userVote?: "up" | "down" | null;
+      score: number;
+      flair?: string;
+      title?: string;
+    })[]
+  >([
     {
       id: `comm_post_1_${community.slug}`,
-      author: {
-        id: "sarah",
-        username: "sarah_code",
-        displayName: "Sarah Chen",
-        avatar:
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
-        role: "Systems Architect",
-        isFollowing: true,
-      },
-      content: `Welcome everyone to c/${community.slug}! 🚀 What are the top challenges you are encountering right now? Drop your thoughts, questions, or showcase demos below!`,
-      createdAt: "3 hours ago",
-      likesCount: 34,
+      authorId: "sarah",
+      authorName: "Sarah Chen",
+      authorUsername: "sarah_code",
+      authorAvatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
+      authorHeadline: "Distributed Systems Architect",
+      title: `What is everyone working on this week in r/${community.slug}?`,
+      content: `Welcome to r/${community.slug}! 🚀 Drop your latest prototypes, architectural questions, or design challenges below. Let's give each other actionable feedback and celebrate what we're building.`,
+      flair: "Discussion",
+      score: 47,
+      userVote: null,
+      createdAt: "2 hours ago",
+      likesCount: 47,
+      commentsCount: 14,
       isLiked: false,
-      commentsCount: 8,
-      community: {
-        id: community.id,
-        name: community.name,
-        slug: community.slug,
-      },
-      tags: ["Discussion", "Welcome", "Insights"],
+      isBookmarked: false,
+      tags: ["Discussion", "Showcase"],
       comments: [
         {
           id: "cm_1",
@@ -99,150 +110,95 @@ export default function CommunityDetailPage({
           authorUsername: "alex_design",
           authorAvatar:
             "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-          content:
-            "Super excited for this community! Can't wait to see all the creative work.",
-          createdAt: "2 hours ago",
-          likesCount: 5,
+          content: "Just finalized our new design token typography ramp with fluid sizing. Really excited to test it across mobile breakpoints!",
+          createdAt: "1 hour ago",
+        },
+        {
+          id: "cm_2",
+          authorId: "marcus",
+          authorName: "Marcus Vance",
+          authorUsername: "marcus_ai",
+          authorAvatar:
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+          content: "Working on streaming agent tool-calls via WebSockets with instant UI updates. Latency dropped to sub-50ms.",
+          createdAt: "45 minutes ago",
         },
       ],
     },
     {
       id: `comm_post_2_${community.slug}`,
-      author: {
-        id: "marcus",
-        username: "marcus_ai",
-        displayName: "Marcus Vance",
-        avatar:
-          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
-        role: "ML Researcher & Agent Architect",
-        isFollowing: false,
-      },
-      content: `Just published our benchmark comparisons for low-latency agent inference pipelines. Token streaming time-to-first-token dropped by 48% using adaptive speculative decoding. Full writeup coming later this week!`,
-      createdAt: "6 hours ago",
-      likesCount: 52,
+      authorId: "alex",
+      authorName: "Alex Rivera",
+      authorUsername: "alex_design",
+      authorAvatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
+      authorHeadline: "Principal Designer",
+      title: "Lessons learned building Reddit-grade community interactions",
+      content: "When building community products, deterministic state for votes and optimistic comment trees make the entire experience feel instantaneous. Here is a breakdown of our layout and interaction hierarchy.",
+      mediaUrl:
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80",
+      flair: "Insight",
+      score: 112,
+      userVote: "up",
+      createdAt: "5 hours ago",
+      likesCount: 112,
+      commentsCount: 29,
       isLiked: true,
-      commentsCount: 14,
-      community: {
-        id: community.id,
-        name: community.name,
-        slug: community.slug,
-      },
-      tags: ["Research", "Benchmarks", "Performance"],
+      isBookmarked: true,
+      tags: ["Design", "Architecture"],
       comments: [],
     },
   ]);
 
-  // Show & Tell project showcase
-  const showcaseProjects = [
-    {
-      id: "sh_1",
-      title: "Hyperflow Micro-Animations",
-      creator: "@alex_design",
-      description:
-        "A physics-based gesture interaction library for spring dynamics in WebGL and React.",
-      image:
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80",
-      upvotes: 89,
-      tags: ["WebGL", "Motion", "UI"],
-    },
-    {
-      id: "sh_2",
-      title: "Zero-Latency Token Streaming",
-      creator: "@sarah_code",
-      description:
-        "High-throughput WebSocket proxy with dynamic backpressure buffer in Rust & Node.js.",
-      image:
-        "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80",
-      upvotes: 114,
-      tags: ["Rust", "WebSocket", "Perf"],
-    },
-    {
-      id: "sh_3",
-      title: "Agentic Canvas Workspace",
-      creator: "@marcus_ai",
-      description:
-        "Spatial infinite canvas where autonomous agents execute subroutines in parallel sandboxes.",
-      image:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80",
-      upvotes: 142,
-      tags: ["Agents", "Canvas", "AI"],
-    },
-  ];
+  // Vote handler
+  const handleVote = (postId: string, direction: "up" | "down") => {
+    setPosts((prev) =>
+      prev.map((post) => {
+        if (post.id !== postId) return post;
+        const currentVote = post.userVote;
+        let newVote: "up" | "down" | null = direction;
+        let scoreDelta = 0;
 
-  // Community members
-  const [members, setMembers] = useState([
-    {
-      id: "mem_1",
-      username: "alex_design",
-      displayName: "Alex Rivera",
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-      role: "Hub Founder & Moderator",
-      badge: "Founder",
-      isFollowing: false,
-    },
-    {
-      id: "mem_2",
-      username: "sarah_code",
-      displayName: "Sarah Chen",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
-      role: "Distributed Systems & Next.js Lead",
-      badge: "Moderator",
-      isFollowing: true,
-    },
-    {
-      id: "mem_3",
-      username: "marcus_ai",
-      displayName: "Marcus Vance",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
-      role: "Agentic Systems Researcher",
-      badge: "Core Member",
-      isFollowing: false,
-    },
-  ]);
-
-  const toggleJoin = () => {
-    setCommunity((prev) => ({
-      ...prev,
-      isMember: !prev.isMember,
-      membersCount: prev.isMember
-        ? prev.membersCount - 1
-        : prev.membersCount + 1,
-    }));
-  };
-
-  const handleCreatePost = (newPost: FeedPost) => {
-    setCommunityPosts([
-      {
-        ...newPost,
-        community: {
-          id: community.id,
-          name: community.name,
-          slug: community.slug,
-        },
-      },
-      ...communityPosts,
-    ]);
-  };
-
-  const handleLikePost = (postId: string) => {
-    setCommunityPosts((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            isLiked: !p.isLiked,
-            likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1,
-          };
+        if (currentVote === direction) {
+          // Cancel vote
+          newVote = null;
+          scoreDelta = direction === "up" ? -1 : 1;
+        } else if (currentVote === null) {
+          scoreDelta = direction === "up" ? 1 : -1;
+        } else {
+          // Flip vote
+          scoreDelta = direction === "up" ? 2 : -2;
         }
-        return p;
+
+        return {
+          ...post,
+          userVote: newVote,
+          score: post.score + scoreDelta,
+        };
       })
     );
   };
 
-  const handleShareLink = () => {
+  const handleToggleJoin = () => {
+    setCommunity((prev) => ({
+      ...prev,
+      isMember: !prev.isMember,
+      membersCount: prev.isMember ? prev.membersCount - 1 : prev.membersCount + 1,
+    }));
+  };
+
+  const handlePostCreated = (newPost: FeedPost) => {
+    const redditPost = {
+      ...newPost,
+      score: 1,
+      userVote: "up" as const,
+      flair: newPost.tags?.[0] || "Post",
+      title: newPost.content.slice(0, 60) + (newPost.content.length > 60 ? "..." : ""),
+    };
+    setPosts((prev) => [redditPost, ...prev]);
+  };
+
+  const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
@@ -250,504 +206,329 @@ export default function CommunityDetailPage({
     }
   };
 
-  const toggleFollowMember = (id: string) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, isFollowing: !m.isFollowing } : m))
-    );
-  };
-
   return (
-    <div className="min-vh-100 bg-slate-50/60 pb-20">
-      {/* Community Banner */}
-      <div className="relative h-56 sm:h-72 w-full overflow-hidden bg-slate-900">
+    <div className="min-h-screen bg-[#DAE0E6] flex flex-col">
+      {/* Top Banner */}
+      <div className="w-full h-36 sm:h-48 md:h-56 relative bg-slate-800">
         <img
           src={community.coverImage}
           alt={community.name}
-          className="w-full h-full object-cover opacity-75 transform scale-105"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
-
-        {/* Back Link */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 relative z-10">
-          <Link
-            href="/communities"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-md text-white text-xs font-semibold hover:bg-white/30 transition shadow-sm border border-white/20"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Communities
-          </Link>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
       </div>
 
-      {/* Community Header Card */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-20">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 backdrop-blur-md">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-white shadow-lg bg-slate-100 shrink-0">
+      {/* Subreddit Header Strip */}
+      <div className="bg-white border-b border-[#CCCCCC] shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4">
+            <div className="flex items-end gap-4 -mt-10 sm:-mt-12 z-10">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-md shrink-0">
                 <img
                   src={community.avatar}
                   alt={community.name}
                   className="w-full h-full object-cover"
                 />
               </div>
-
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-poppin-lilac/10 text-poppin-lilac border border-poppin-lilac/20">
-                    {community.category}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Verified Hub
-                  </span>
-                </div>
-
-                <h1 className="font-heading text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                  {community.name}
+              <div className="pt-2 sm:pt-0">
+                <h1 className="text-xl sm:text-2xl font-black text-[#1C1C1C] flex items-center gap-2">
+                  <span>{community.name}</span>
                 </h1>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">
-                  c/{community.slug}
-                </p>
-                <p className="text-slate-600 text-sm mt-2 max-w-2xl leading-relaxed">
-                  {community.tagline}
+                <p className="text-xs sm:text-sm font-semibold text-slate-500">
+                  r/{community.slug}
                 </p>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex items-center gap-3 shrink-0 self-stretch sm:self-auto">
+            {/* Header Actions */}
+            <div className="flex items-center gap-2 pt-2 sm:pt-0">
               <button
-                onClick={handleShareLink}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition active:scale-95 shadow-sm"
+                onClick={handleCopyLink}
+                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-2xs transition"
               >
-                {copiedLink ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-emerald-700">Link Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-4 h-4 text-slate-500" />
-                    <span>Share</span>
-                  </>
-                )}
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{copiedLink ? "Copied!" : "Share"}</span>
               </button>
-
               <button
-                onClick={toggleJoin}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition active:scale-95 shadow-sm ${
+                onClick={handleToggleJoin}
+                className={`px-6 py-1.5 rounded-full text-xs font-extrabold transition-all shadow-xs ${
                   community.isMember
-                    ? "bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-slate-200"
-                    : "bg-poppin-navy text-white hover:bg-poppin-navy/90 hover:shadow-poppin-navy/20"
+                    ? "bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300"
+                    : "bg-poppin-lilac hover:bg-poppin-lilac-hover text-white"
                 }`}
               >
                 {community.isMember ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Joined Hub</span>
-                  </>
+                  <span className="flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" /> Joined
+                  </span>
                 ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    <span>Join Hub</span>
-                  </>
+                  "Join Community"
                 )}
               </button>
-            </div>
-          </div>
-
-          {/* Hub Stats Bar */}
-          <div className="mt-6 pt-6 border-t border-slate-100 flex flex-wrap items-center gap-6 sm:gap-10 text-xs text-slate-600">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-poppin-lilac" />
-              <span>
-                <strong className="text-slate-900 font-bold font-mono">
-                  {community.membersCount.toLocaleString()}
-                </strong>{" "}
-                Members
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>
-                <strong className="text-slate-900 font-bold font-mono">
-                  {Math.round(community.membersCount * 0.18)}
-                </strong>{" "}
-                Online now
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-slate-400" />
-              <span>
-                <strong className="text-slate-900 font-bold font-mono">
-                  {communityPosts.length + 42}
-                </strong>{" "}
-                Discussions
-              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Tabs & Content vs Sidebar */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Content Area */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto scrollbar-none">
+      {/* Main Reddit 2-Column Content Layout */}
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Feed Column (2 Cols on lg) */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Post Composer */}
+            <PostComposer onPostCreated={handlePostCreated} />
+
+            {/* Reddit Sort Bar */}
+            <div className="bg-white rounded-xl border border-[#CCCCCC] p-2 flex items-center gap-1 shadow-2xs">
               <button
-                onClick={() => setActiveTab("discussions")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-                  activeTab === "discussions"
-                    ? "bg-poppin-navy text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                onClick={() => setActiveSort("hot")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeSort === "hot"
+                    ? "bg-slate-100 text-poppin-lilac shadow-2xs"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                <MessageSquare className="w-4 h-4" />
-                Discussions
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20 text-white font-mono">
-                  {communityPosts.length}
-                </span>
+                <Flame className="w-4 h-4" />
+                <span>Hot</span>
               </button>
-
               <button
-                onClick={() => setActiveTab("showcase")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-                  activeTab === "showcase"
-                    ? "bg-poppin-navy text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                onClick={() => setActiveSort("new")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeSort === "new"
+                    ? "bg-slate-100 text-poppin-lilac shadow-2xs"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                Show & Tell
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-poppin-lilac/10 text-poppin-lilac font-mono">
-                  {showcaseProjects.length}
-                </span>
+                <span>New</span>
               </button>
-
               <button
-                onClick={() => setActiveTab("rules")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-                  activeTab === "rules"
-                    ? "bg-poppin-navy text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                onClick={() => setActiveSort("top")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  activeSort === "top"
+                    ? "bg-slate-100 text-poppin-lilac shadow-2xs"
+                    : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                <BookOpen className="w-4 h-4" />
-                Guidelines
-              </button>
-
-              <button
-                onClick={() => setActiveTab("members")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-                  activeTab === "members"
-                    ? "bg-poppin-navy text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                <Users className="w-4 h-4" />
-                Members
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-slate-200 text-slate-700 font-mono">
-                  {members.length}
-                </span>
+                <Award className="w-4 h-4" />
+                <span>Top</span>
               </button>
             </div>
 
-            {/* TAB: DISCUSSIONS */}
-            {activeTab === "discussions" && (
-              <div className="space-y-6">
-                {/* Post Composer for Community */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-slate-500">
-                    <Sparkles className="w-3.5 h-3.5 text-poppin-lilac" />
-                    <span>Post directly into c/{community.slug}</span>
+            {/* Reddit Post Stream */}
+            <div className="space-y-3">
+              {posts.map((post) => (
+                <article
+                  key={post.id}
+                  className="bg-white rounded-xl border border-[#CCCCCC] hover:border-slate-400 transition-colors shadow-2xs overflow-hidden flex"
+                >
+                  {/* Left Reddit Voting Gutter */}
+                  <div className="w-10 sm:w-12 bg-slate-50/70 p-1.5 flex flex-col items-center justify-start border-r border-slate-100 shrink-0 select-none">
+                    <button
+                      onClick={() => handleVote(post.id, "up")}
+                      className={`p-1 rounded-md hover:bg-slate-200 transition ${
+                        post.userVote === "up" ? "text-poppin-lilac font-black" : "text-slate-400"
+                      }`}
+                      title="Upvote"
+                    >
+                      <ChevronUp className="w-5 h-5" />
+                    </button>
+                    <span
+                      className={`text-xs font-bold my-0.5 ${
+                        post.userVote === "up"
+                          ? "text-poppin-lilac"
+                          : post.userVote === "down"
+                          ? "text-indigo-600"
+                          : "text-slate-700"
+                      }`}
+                    >
+                      {post.score}
+                    </span>
+                    <button
+                      onClick={() => handleVote(post.id, "down")}
+                      className={`p-1 rounded-md hover:bg-slate-200 transition ${
+                        post.userVote === "down" ? "text-indigo-600 font-black" : "text-slate-400"
+                      }`}
+                      title="Downvote"
+                    >
+                      <ChevronDown className="w-5 h-5" />
+                    </button>
                   </div>
-                  <PostComposer onPostCreated={handleCreatePost} />
-                </div>
 
-                {/* Posts stream */}
-                <div className="space-y-4">
-                  {communityPosts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      onLikeToggle={handleLikePost}
-                      onBookmarkToggle={() => {}}
-                      onAddComment={(postId, comment) => {
-                        setCommunityPosts((prev) =>
-                          prev.map((p) => {
-                            if (p.id === postId) {
-                              return {
-                                ...p,
-                                commentsCount: p.commentsCount + 1,
-                                comments: [...(p.comments || []), comment],
-                              };
-                            }
-                            return p;
-                          })
-                        );
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TAB: SHOWCASE */}
-            {activeTab === "showcase" && (
-              <div className="space-y-6">
-                <div className="bg-gradient-to-r from-poppin-navy to-poppin-navy/90 text-white rounded-2xl p-6 shadow-sm">
-                  <h3 className="font-heading text-lg font-bold">
-                    Show & Tell Showcase
-                  </h3>
-                  <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl">
-                    Projects, experiments, code repos, and design systems built
-                    by members of c/{community.slug}.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {showcaseProjects.map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition group"
-                    >
-                      <div className="h-44 w-full overflow-hidden bg-slate-100 relative">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1.5">
-                          <Flame className="w-3.5 h-3.5 text-orange-500" />
-                          <span>{item.upvotes}</span>
-                        </div>
-                      </div>
-
-                      <div className="p-5">
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                          <span className="font-mono text-poppin-lilac font-medium">
-                            {item.creator}
-                          </span>
-                        </div>
-                        <h4 className="font-heading font-bold text-slate-900 group-hover:text-poppin-lilac transition">
-                          {item.title}
-                        </h4>
-                        <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
-
-                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                          <div className="flex flex-wrap gap-1.5">
-                            {item.tags.map((t) => (
-                              <span
-                                key={t}
-                                className="px-2 py-0.5 bg-slate-100 rounded-md text-[10px] font-medium text-slate-600"
-                              >
-                                #{t}
-                              </span>
-                            ))}
-                          </div>
-                          <button className="text-xs font-semibold text-poppin-navy hover:text-poppin-lilac inline-flex items-center gap-1">
-                            <span>Inspect</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TAB: RULES */}
-            {activeTab === "rules" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
-                <div>
-                  <h3 className="font-heading text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-poppin-lilac" />
-                    Community Norms & Guidelines
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Please read and adhere to our core standards when
-                    participating in c/{community.slug}.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {community.rules.map((rule, idx) => (
-                    <div
-                      key={idx}
-                      className="p-4 rounded-xl bg-slate-50 border border-slate-200/60 flex items-start gap-3.5"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-poppin-lilac/10 text-poppin-lilac font-bold font-mono text-xs flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-800">
-                          Rule #{idx + 1}
-                        </h4>
-                        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                          {rule}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/60 text-xs text-amber-800 flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0" />
-                  <span>
-                    Violations may result in content removal or hub expulsion by
-                    moderators to preserve community quality.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* TAB: MEMBERS */}
-            {activeTab === "members" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-heading text-lg font-bold text-slate-900">
-                      Community Directory
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Meet founders, moderators, and active contributors.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-slate-500">
-                    {members.length} members shown
-                  </span>
-                </div>
-
-                <div className="divide-y divide-slate-100">
-                  {members.map((mem) => (
-                    <div
-                      key={mem.id}
-                      className="py-4 flex items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <img
-                          src={mem.avatar}
-                          alt={mem.displayName}
-                          className="w-11 h-11 rounded-xl object-cover ring-2 ring-slate-100"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/profiles/${mem.username}`}
-                              className="font-semibold text-sm text-slate-900 hover:text-poppin-lilac transition"
-                            >
-                              {mem.displayName}
-                            </Link>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-poppin-lilac/10 text-poppin-lilac">
-                              {mem.badge}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-500">
-                            @{mem.username} &bull; {mem.role}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => toggleFollowMember(mem.id)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 ${
-                          mem.isFollowing
-                            ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            : "bg-poppin-navy text-white hover:bg-poppin-navy/90"
-                        }`}
+                  {/* Post Main Content */}
+                  <div className="p-3.5 sm:p-4 flex-1 min-w-0">
+                    {/* Header: Author + Flair + Timestamp */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mb-2">
+                      <Link
+                        href={`/profiles/${post.authorUsername}`}
+                        className="flex items-center gap-1.5 font-bold text-slate-800 hover:underline"
                       >
-                        {mem.isFollowing ? "Following" : "Follow"}
+                        <img
+                          src={post.authorAvatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
+                          alt={post.authorName}
+                          className="w-4 h-4 rounded-full object-cover"
+                        />
+                        <span>u/{post.authorUsername}</span>
+                      </Link>
+                      <span>&bull;</span>
+                      <span>{post.createdAt}</span>
+                      {post.flair && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-poppin-lilac-light text-poppin-lilac border border-poppin-lilac-border">
+                          {post.flair}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title & Body */}
+                    {post.title && (
+                      <h2 className="text-base sm:text-lg font-bold text-[#1C1C1C] mb-1.5 leading-snug">
+                        {post.title}
+                      </h2>
+                    )}
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line mb-3">
+                      {post.content}
+                    </p>
+
+                    {/* Attached Media */}
+                    {post.mediaUrl && (
+                      <div className="rounded-xl overflow-hidden border border-slate-200 my-3 max-h-96 bg-slate-900 flex items-center justify-center">
+                        <img
+                          src={post.mediaUrl}
+                          alt="Post media"
+                          className="w-full h-auto max-h-96 object-contain"
+                        />
+                      </div>
+                    )}
+
+                    {/* Reddit Post Action Bar */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 text-xs font-bold text-slate-500">
+                      <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-slate-100 transition">
+                        <MessageSquare className="w-4 h-4 text-slate-400" />
+                        <span>{post.commentsCount} Comments</span>
+                      </button>
+                      <button
+                        onClick={handleCopyLink}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-slate-100 transition"
+                      >
+                        <Share2 className="w-4 h-4 text-slate-400" />
+                        <span>Share</span>
+                      </button>
+                      <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-slate-100 transition">
+                        <Bookmark className="w-4 h-4 text-slate-400" />
+                        <span>Save</span>
                       </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
+                    {/* Inline Comments Section */}
+                    {post.comments && post.comments.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 bg-slate-50/60 p-3 rounded-xl">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                          Top Comments
+                        </p>
+                        {post.comments.map((cm) => (
+                          <div key={cm.id} className="text-xs text-slate-700 pl-2 border-l-2 border-slate-300 py-0.5">
+                            <span className="font-bold text-slate-900 mr-1.5">
+                              u/{cm.authorUsername}:
+                            </span>
+                            <span>{cm.content}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
 
-          {/* Right Sidebar Rail */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* About Card */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <h3 className="font-heading font-bold text-slate-900 text-sm mb-3">
-                About this Hub
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {community.description}
-              </p>
+          {/* Right Reddit Sidebar Column */}
+          <div className="space-y-4">
+            {/* Widget 1: About Community */}
+            <div className="bg-white rounded-xl border border-[#CCCCCC] overflow-hidden shadow-2xs">
+              <div className="bg-slate-800 text-white p-3 font-extrabold text-xs uppercase tracking-wider flex items-center justify-between">
+                <span>About Community</span>
+                <span className="text-poppin-lilac font-mono">r/{community.slug}</span>
+              </div>
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {community.description}
+                </p>
 
-              <div className="mt-5 pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Created</span>
-                  <span className="font-medium text-slate-700">
-                    October 2026
-                  </span>
+                <div className="flex items-center gap-2 text-xs text-slate-500 pt-1 border-t border-slate-100">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <span>Created November 2026</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Category</span>
-                  <span className="font-medium text-slate-700">
-                    {community.category}
-                  </span>
+
+                {/* Member Stats */}
+                <div className="grid grid-cols-2 gap-2 py-2 border-t border-b border-slate-100 text-center">
+                  <div>
+                    <p className="text-base font-extrabold text-[#1C1C1C]">
+                      {community.membersCount.toLocaleString()}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-semibold">Members</p>
+                  </div>
+                  <div>
+                    <p className="text-base font-extrabold text-emerald-600 flex items-center justify-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      42
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-semibold">Online</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Visibility</span>
-                  <span className="font-medium text-emerald-600 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Public Community
-                  </span>
-                </div>
+
+                <button
+                  onClick={handleToggleJoin}
+                  className={`w-full py-2 rounded-full text-xs font-bold transition shadow-xs ${
+                    community.isMember
+                      ? "bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300"
+                      : "bg-poppin-lilac hover:bg-poppin-lilac-hover text-white"
+                  }`}
+                >
+                  {community.isMember ? "Joined r/" + community.slug : "Join r/" + community.slug}
+                </button>
               </div>
             </div>
 
-            {/* Moderators Card */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-              <h3 className="font-heading font-bold text-slate-900 text-sm mb-3 flex items-center gap-2">
-                <Award className="w-4 h-4 text-poppin-lilac" />
-                Hub Moderators
-              </h3>
-              <div className="space-y-3">
-                {community.moderators.map((mod) => (
-                  <div key={mod.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-poppin-lilac/20 text-poppin-navy font-bold flex items-center justify-center text-xs">
-                        {mod.displayName.charAt(0)}
-                      </div>
-                      <div>
-                        <Link
-                          href={`/profiles/${mod.username}`}
-                          className="text-xs font-semibold text-slate-800 hover:text-poppin-lilac block transition"
-                        >
-                          {mod.displayName}
-                        </Link>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          @{mod.username}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-semibold text-poppin-lilac bg-poppin-lilac/10 px-2 py-0.5 rounded-full">
-                      Mod
-                    </span>
+            {/* Widget 2: Community Rules */}
+            <div className="bg-white rounded-xl border border-[#CCCCCC] overflow-hidden shadow-2xs">
+              <div className="bg-slate-100 border-b border-slate-200 px-4 py-2.5 font-bold text-xs text-slate-800">
+                r/{community.slug} Rules
+              </div>
+              <div className="p-4 divide-y divide-slate-100 text-xs">
+                {community.rules.map((rule, idx) => (
+                  <div key={idx} className="py-2.5 first:pt-0 last:pb-0">
+                    <span className="font-bold text-slate-900 mr-2">{idx + 1}.</span>
+                    <span className="text-slate-600">{rule}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Helpful Resources */}
-            <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/60">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Community Charter
-              </h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                POPPIN hubs are governed by peer consensus and craft excellence.
-                Spam, abusive conduct, or low-effort slop will be moderated
-                swiftly.
-              </p>
+            {/* Widget 3: Moderators */}
+            <div className="bg-white rounded-xl border border-[#CCCCCC] overflow-hidden shadow-2xs">
+              <div className="bg-slate-100 border-b border-slate-200 px-4 py-2.5 font-bold text-xs text-slate-800 flex items-center justify-between">
+                <span>Moderators</span>
+                <Link
+                  href="/messages"
+                  className="text-poppin-lilac hover:underline text-[11px] flex items-center gap-1 font-semibold"
+                >
+                  <Mail className="w-3 h-3" />
+                  <span>Message Mods</span>
+                </Link>
+              </div>
+              <div className="p-4 space-y-2.5 text-xs">
+                {community.moderators.map((mod) => (
+                  <div key={mod.id} className="flex items-center justify-between">
+                    <Link
+                      href={`/profiles/${mod.username}`}
+                      className="font-bold text-slate-800 hover:text-poppin-lilac hover:underline"
+                    >
+                      u/{mod.username}
+                    </Link>
+                    <span className="text-[10px] text-slate-400 font-semibold">Moderator</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

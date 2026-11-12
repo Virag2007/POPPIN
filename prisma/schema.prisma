@@ -1,4 +1,4 @@
-// POPPIN Prisma Schema - Identity & User Management (Developer 1)
+// POPPIN Prisma Schema - Identity, User Management & Community Platform
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -36,7 +36,7 @@ model User {
   reportsSubmitted UserReport[] @relation("Reporter")
   reportsReceived  UserReport[] @relation("ReportedUser")
 
-  // Developer 2: Content & Communication
+  // Content & Communication
   posts                  Post[]
   likes                  Like[]
   comments               Comment[]
@@ -149,7 +149,7 @@ model UserReport {
 }
 
 // ==========================================
-// DEVELOPER 2: CONTENT & COMMUNICATION MODELS
+// CONTENT & COMMUNICATION MODELS
 // ==========================================
 
 model Post {

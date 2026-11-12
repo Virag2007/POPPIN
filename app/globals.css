@@ -8,14 +8,18 @@ html {
 
 @layer base {
   body {
-    @apply bg-[#FAFAFC] text-poppin-navy font-sans antialiased;
+    @apply bg-[#F4F6F8] text-[#1E293B] font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-poppin-lilac-light text-poppin-navy;
   }
 }
 
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {

@@ -1,15 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { FeedPost } from "@/types";
 import {
-  Sparkles,
   Image as ImageIcon,
   Tag,
   X,
   Loader2,
+  UploadCloud,
+  Send,
 } from "lucide-react";
 
 interface PostComposerProps {
@@ -20,12 +21,15 @@ const POPULAR_TOPICS = ["Design", "TypeScript", "AI", "Nextjs", "Showcase", "Ide
 
 export function PostComposer({ onPostCreated }: PostComposerProps) {
   const { user, profile } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [content, setContent] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showImageInput, setShowImageInput] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -35,13 +39,88 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
     );
   };
 
+  // Upload image file to server (/api/v1/media/upload -> S3/storage adapter)
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select a valid image file (PNG, JPG, WebP, GIF)");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Image must be under 10MB");
+      return;
+    }
+
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Instant local preview for immediate responsive feel
+      const localPreview = URL.createObjectURL(file);
+      setImageUrl(localPreview);
+
+      const token = typeof window !== "undefined" ? localStorage.getItem("poppin_token") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch("/api/v1/media/upload", {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success && json.data?.url) {
+        setImageUrl(json.data.url);
+      } else {
+        // Fallback to localPreview data
+        console.warn("Upload returned message:", json.error?.message);
+      }
+    } catch (err) {
+      console.error("Image upload error:", err);
+      // Still keep localPreview so user can create post
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() || isUploading) return;
 
     setIsPosting(true);
 
-    // Simulate instant optimistic feed creation
     setTimeout(() => {
       const newPost: FeedPost = {
         id: "post_" + Date.now(),
@@ -64,18 +143,26 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
       onPostCreated(newPost);
       setContent("");
       setImageUrl("");
-      setShowImageInput(false);
       setSelectedTags([]);
       setIsPosting(false);
-    }, 250);
+    }, 200);
   };
 
   return (
-    <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-sm mb-6 transition-all hover:border-slate-300">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all mb-6 ${
+        isDragging
+          ? "border-poppin-lilac ring-2 ring-poppin-lilac/30 bg-poppin-lilac-light/20"
+          : "border-slate-200/90 shadow-xs hover:border-slate-300"
+      }`}
+    >
       <form onSubmit={handleSubmit}>
-        <div className="flex gap-3.5">
+        <div className="flex gap-3">
           {/* Avatar */}
-          <div className="w-11 h-11 rounded-full bg-poppin-lilac-light text-poppin-lilac font-black flex items-center justify-center text-sm shrink-0 border border-poppin-lilac-border overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0 border border-slate-200 overflow-hidden">
             {profile?.avatar ? (
               <img
                 src={profile.avatar}
@@ -94,65 +181,67 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
               required
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              maxLength={500}
-              placeholder="What's poppin' today? Share an insight, project or discovery..."
-              className="w-full p-2.5 rounded-2xl border-none text-sm sm:text-base font-medium text-poppin-navy placeholder:text-slate-400 focus:outline-none focus:ring-0 resize-none"
+              maxLength={1000}
+              placeholder="Create a post or share an update with the community..."
+              className="w-full p-2 rounded-xl border-none text-sm sm:text-base font-normal text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 resize-none"
             />
 
             {/* Attached Image Preview */}
-            {imageUrl.trim() && (
-              <div className="relative mt-2 mb-3 rounded-2xl overflow-hidden border border-slate-200 max-h-60 group">
+            {imageUrl && (
+              <div className="relative mt-2 mb-3 rounded-xl overflow-hidden border border-slate-200 max-h-72 bg-slate-50 group">
                 <img
                   src={imageUrl}
                   alt="Post attachment"
-                  className="w-full h-full object-cover"
-                  onError={() => {}}
+                  className="w-full h-auto max-h-72 object-contain mx-auto"
                 />
-                <button
-                  type="button"
-                  onClick={() => setImageUrl("")}
-                  className="absolute top-2 right-2 bg-poppin-navy/80 hover:bg-poppin-navy text-white p-1 rounded-full transition-all"
-                  title="Remove image"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {isUploading && (
+                  <div className="absolute inset-0 bg-white/70 backdrop-blur-xs flex items-center justify-center gap-2 text-xs font-semibold text-slate-700">
+                    <Loader2 className="w-5 h-5 text-poppin-lilac animate-spin" />
+                    <span>Uploading to storage...</span>
+                  </div>
+                )}
+                {!isUploading && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageUrl("");
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                    className="absolute top-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white p-1 rounded-full shadow-sm transition-all"
+                    title="Remove image"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Optional Image URL Input */}
-            {showImageInput && !imageUrl && (
-              <div className="flex items-center gap-2 mb-3 mt-1">
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Paste image URL (https://...)"
-                  className="flex-1 px-3.5 py-1.5 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-poppin-lilac"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowImageInput(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            {/* Drag & Drop Visual Hint */}
+            {isDragging && (
+              <div className="my-2 p-4 rounded-xl border-2 border-dashed border-poppin-lilac bg-poppin-lilac-light/40 flex items-center justify-center gap-2 text-xs font-bold text-poppin-lilac">
+                <UploadCloud className="w-5 h-5 animate-bounce" />
+                <span>Drop your image here to upload directly to S3 storage</span>
               </div>
             )}
 
-            {/* Tag Selection Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
-              <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-                <Tag className="w-3 h-3" />
-                <span>Tags:</span>
+            {/* Error Message */}
+            {uploadError && (
+              <p className="text-xs text-rose-600 font-medium mb-2">{uploadError}</p>
+            )}
+
+            {/* Tags Selector */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-3 pt-2">
+              <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+                <Tag className="w-3 h-3" /> Topic:
               </span>
               {POPULAR_TOPICS.map((tag) => {
                 const isSelected = selectedTags.includes(tag);
                 return (
                   <button
-                    key={tag}
                     type="button"
+                    key={tag}
                     onClick={() => toggleTag(tag)}
-                    className={`min-h-[26px] px-2.5 py-0.5 rounded-full text-2xs font-bold transition-all ${
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all ${
                       isSelected
                         ? "bg-poppin-lilac text-white shadow-2xs"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -164,38 +253,49 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
               })}
             </div>
 
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileInputChange}
+              accept="image/*"
+              className="hidden"
+            />
+
             {/* Action Bar */}
-            <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowImageInput(!showImageInput)}
-                  className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    showImageInput || imageUrl
-                      ? "bg-poppin-lilac-light text-poppin-lilac font-bold"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-poppin-lilac hover:bg-poppin-lilac-light transition-all border border-slate-200/80"
                 >
-                  <ImageIcon className="w-4 h-4 text-poppin-lilac" />
-                  <span className="hidden sm:inline">Add Media</span>
+                  <ImageIcon className="w-3.5 h-3.5 text-poppin-lilac" />
+                  <span>{imageUrl ? "Change Image" : "Upload Image"}</span>
                 </button>
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  (or drag & drop here)
+                </span>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-2xs text-slate-400 font-semibold">
-                  {content.length}/500
+                <span className="text-xs text-slate-400 hidden sm:inline">
+                  {content.length}/1000
                 </span>
                 <button
                   type="submit"
-                  disabled={isPosting || !content.trim()}
-                  className="min-h-[40px] px-5 py-2 rounded-xl bg-poppin-navy text-white text-xs font-extrabold hover:bg-poppin-navy-light shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                  disabled={!content.trim() || isPosting || isUploading}
+                  className="min-h-[36px] inline-flex items-center gap-1.5 px-5 py-1.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover disabled:opacity-50 text-white font-bold text-xs sm:text-sm shadow-xs transition-all"
                 >
                   {isPosting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-poppin-lilac" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-3.5 h-3.5 text-poppin-lilac" />
+                    <>
+                      <span>Post</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </>
                   )}
-                  <span>Post</span>
                 </button>
               </div>
             </div>

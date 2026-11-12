@@ -1,5 +1,5 @@
-// POPPIN Developer 2: Unified API Client
-// Standardized client consuming Developer 1 authentication session mechanism
+// POPPIN: Unified API Client
+// Standardized client consuming authentication session mechanism
 
 import {
   PostResponse,

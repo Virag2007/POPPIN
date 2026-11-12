@@ -10,17 +10,33 @@ export default {
     extend: {
       colors: {
         poppin: {
-          navy: "#0E1027",
-          "navy-light": "#1B1E3D",
-          lilac: "#9D54F2",
-          "lilac-hover": "#8B3EEB",
-          "lilac-light": "#F6F1FF",
-          "lilac-border": "#E2D3FF",
+          navy: "#0F172A", // Deep slate
+          "navy-light": "#1E293B",
+          // Standard timeless high-contrast brand accent (Classic Electric Royal Blue)
+          lilac: "#2563EB", 
+          "lilac-hover": "#1D4ED8",
+          "lilac-light": "#EFF6FF",
+          "lilac-border": "#BFDBFE",
+          brand: "#2563EB",
+          "brand-hover": "#1D4ED8",
+          "brand-light": "#EFF6FF",
+          "brand-border": "#BFDBFE",
+        },
+        reddit: {
+          orange: "#FF4500",
+          upvote: "#FF4500",
+          downvote: "#6366F1",
+          bg: "#F1F5F9",
+          card: "#FFFFFF",
+          border: "#E2E8F0",
+          hover: "#F8FAFC",
+          text: "#0F172A",
+          muted: "#64748B",
         },
       },
       fontFamily: {
-        sans: ["var(--font-jakarta)", "sans-serif"],
-        display: ["var(--font-unbounded)", "sans-serif"],
+        sans: ["var(--font-jakarta)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        display: ["var(--font-unbounded)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         "2xl": "16px",

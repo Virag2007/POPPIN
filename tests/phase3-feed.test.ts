@@ -145,7 +145,7 @@ export async function runPhase3FeedTests() {
   });
   const frankToken = signToken({ userId: frank.id, email: frank.email, tokenVersion: 1 });
 
-  // Set up Follow relationships (Developer 1's model)
+  // Set up Follow relationships
   await prisma.follow.create({ data: { followerId: alice.id, followingId: bob.id } });
   await prisma.follow.create({ data: { followerId: alice.id, followingId: dave.id } });
   await prisma.follow.create({ data: { followerId: alice.id, followingId: eve.id } });

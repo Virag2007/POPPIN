@@ -144,7 +144,7 @@ export async function runPhase4MessagingTests() {
   assert.strictEqual(dupDirectJson.data.id, conversationId);
 
   // 2. Direct Messaging Block Enforcement
-  console.log("2. Testing Direct Messaging Block Enforcement (Developer 1 Contract)...");
+  console.log("2. Testing Direct Messaging Block Enforcement...");
   // Alice tries to chat with blocked Dave
   const blockedChatReq = createJsonRequest("/api/v1/conversations", "POST", {
     recipientId: dave.id,

@@ -146,7 +146,7 @@ export async function runPhase1PostsTests() {
       { title: "Demo App", url: "https://poppin-demo.io" },
       { title: "GitHub Repo", url: "https://github.com/poppin/app" },
     ],
-    tags: ["#Showcase", "TypeScript", "#Poppin_Dev2"],
+    tags: ["#Showcase", "TypeScript", "#Poppin_Platform"],
     media: [
       {
         url: "https://storage.poppin.io/img1.png",
@@ -181,7 +181,7 @@ export async function runPhase1PostsTests() {
   assert.strictEqual(multiImageJson.data.media[2].order, 2);
   assert.strictEqual(multiImageJson.data.links.length, 2);
   // Check tag normalization (lowercase, stripped hashtags)
-  assert.deepStrictEqual(multiImageJson.data.tags, ["showcase", "typescript", "poppin_dev2"]);
+  assert.deepStrictEqual(multiImageJson.data.tags, ["showcase", "typescript", "poppin_platform"]);
 
   const createdPostId = multiImageJson.data.id;
 

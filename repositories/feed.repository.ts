@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 
 export class FeedRepository {
   static async getFollowingFeed(userId: string, limit = 20, cursor?: string) {
-    // 1. Get following IDs from Developer 1's follow model
+    // 1. Get following IDs from follow model
     const follows = await prisma.follow.findMany({
       where: { followerId: userId },
       select: { followingId: true },
@@ -12,7 +12,7 @@ export class FeedRepository {
     // Include user's own posts and followed users
     const candidateAuthorIds = Array.from(new Set([...followingIds, userId]));
 
-    // 2. Filter out bidirectional blocks from Developer 1's block model
+    // 2. Filter out bidirectional blocks from block model
     const blocks = await prisma.block.findMany({
       where: {
         OR: [{ blockerId: userId }, { blockedId: userId }],

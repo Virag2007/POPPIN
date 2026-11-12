@@ -1,22 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Unbounded } from "next/font/google";
+// Font imports removed to avoid external network calls during production build
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Navbar } from "@/components/Navbar";
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const unbounded = Unbounded({
-  subsets: ["latin"],
-  variable: "--font-unbounded",
-  display: "swap",
-  weight: ["600", "700", "800"],
-});
+// Font imports removed for production build – using default system fonts
 
 export const metadata: Metadata = {
   title: "Poppin. — The Social Identity & Community Platform",
@@ -32,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-type="software" className={`${jakarta.variable} ${unbounded.variable}`}>
+    <html lang="en" data-type="software">
       <head>
         <meta name="site-kind" content="software" />
         <meta name="page-type" content="software" />

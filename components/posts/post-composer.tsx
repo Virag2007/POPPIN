@@ -86,9 +86,8 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
     setLinks(links.filter((_, idx) => idx !== index));
   };
 
-  const processFiles = async (fileList: FileList | File[]) => {
-    const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
-    if (files.length === 0) return;
+  const uploadFiles = async (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
 
     if (media.length + files.length > 10) {
       setErrorMessage("Maximum 10 media files permitted per post");
@@ -99,7 +98,14 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
     setErrorMessage(null);
 
     try {
-      const uploadPromises = files.map(async (file, idx) => {
+      const uploadPromises = Array.from(files).map(async (file, idx) => {
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Only image files (PNG, JPG, WebP, GIF) are supported");
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error("Each image must be under 10MB");
+        }
+
         const formData = new FormData();
         formData.append("file", file);
 
@@ -138,9 +144,31 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      await processFiles(event.target.files);
+    const files = event.target.files;
+    if (files) {
+      await uploadFiles(files);
       event.target.value = "";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await uploadFiles(e.dataTransfer.files);
     }
   };
 
@@ -213,30 +241,30 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
 
   return (
     <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragging(true);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        setIsDragging(false);
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer.files) {
-          processFiles(e.dataTransfer.files);
-        }
-      }}
-      className={`bg-white rounded-xl border shadow-sm p-5 mb-6 transition-colors ${
-        isDragging ? "border-blue-500 bg-blue-50/20" : "border-gray-200"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`bg-white rounded-xl border transition-all p-5 mb-6 relative ${
+        isDragging
+          ? "border-2 border-dashed border-blue-500 bg-blue-50/40 ring-4 ring-blue-100"
+          : "border-gray-200 shadow-sm"
       }`}
     >
+      {/* Drag & Drop Overlay Hint */}
+      {isDragging && (
+        <div className="absolute inset-0 z-20 bg-blue-50/90 rounded-xl border-2 border-dashed border-blue-500 flex flex-col items-center justify-center pointer-events-none p-4 text-center">
+          <svg className="w-10 h-10 text-blue-600 animate-bounce mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+          <p className="text-sm font-bold text-blue-900">Drop images here to attach</p>
+          <p className="text-xs text-blue-600 mt-1">Supports PNG, JPG, WebP, GIF up to 10MB</p>
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         {/* Post Type Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
-            Post Type:
+          <span className="text-xs font-semibold text-slate-600 mr-1">
+            Post type:
           </span>
           {(
             [

@@ -8,8 +8,20 @@ import { socketClient } from "@/lib/socket-client";
 class RealtimeBroadcaster extends EventEmitter {
   broadcastToRoom<T>(room: string, event: RealtimeServerEvent, payload: T): void {
     this.emit(`room:${room}`, { event, payload });
+
     // Also deliver to local socketClient simulation in dev/test
     socketClient._dispatchServerEvent(event, payload);
+
+    // Forward to WebSocket server on port 3001 if active
+    if (typeof fetch !== "undefined") {
+      fetch("http://localhost:3001/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ room, event, payload }),
+      }).catch(() => {
+        // Silently continue if standalone ws server is not active
+      });
+    }
   }
 
   broadcastToUser<T>(userId: string, event: RealtimeServerEvent, payload: T): void {
@@ -19,4 +31,3 @@ class RealtimeBroadcaster extends EventEmitter {
 }
 
 export const realtimeBroadcaster = new RealtimeBroadcaster();
-

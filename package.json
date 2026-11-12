@@ -21,6 +21,7 @@
     "prisma:postgres:push": "prisma db push --schema=prisma/postgresql/schema.prisma",
     "prisma:migrate": "node scripts/prisma-sqlite.js migrate dev",
     "prisma:push": "node scripts/prisma-sqlite.js db push",
+    "ws": "tsx server/websocket.ts",
     "test": "npx tsx tests/run-all.ts"
   },
   "overrides": {
@@ -30,6 +31,7 @@
     "@aws-sdk/client-s3": "^3.1166.0",
     "@gsap/react": "^2.1.2",
     "@prisma/client": "^5.22.0",
+    "@types/ws": "^8.18.2",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.11.0",
     "gsap": "^3.15.1",
@@ -38,6 +40,9 @@
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "ui-ux-pro-max-cli": "^2.15.0",
+    "uipro-cli": "^2.2.3",
+    "ws": "^8.22.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {

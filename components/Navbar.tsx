@@ -53,7 +53,7 @@ export function Navbar() {
         role="banner"
         className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-40 transition-shadow"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo & Status */}
           <div className="flex items-center gap-3 shrink-0">
             <Link
@@ -182,14 +182,14 @@ export function Navbar() {
                   href="/login"
                   className="min-h-[40px] inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 hover:text-poppin-navy hover:bg-slate-100 rounded-xl transition-all"
                 >
-                  Sign In
+                  Sign in
                 </Link>
                 <Link
                   href="/register"
-                  className="min-h-[40px] inline-flex items-center gap-1.5 justify-center px-4 py-2 text-xs font-bold text-white bg-poppin-navy hover:bg-poppin-navy/90 rounded-xl shadow-xs hover:shadow-md transition-all active:scale-95"
+                  className="min-h-[40px] inline-flex items-center gap-1.5 justify-center px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-xs transition-all active:scale-95"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-poppin-lilac" />
-                  <span>Join POPPIN.</span>
+                  <span>Join POPPIN</span>
                 </Link>
               </div>
             )}

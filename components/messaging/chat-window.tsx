@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ConversationResponse, MessageResponse, RealtimeTypingPayload } from "@/types";
 import { socketClient } from "@/lib/socket-client";
+import { Send, Loader2 } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: ConversationResponse;
@@ -34,6 +35,10 @@ export function ChatWindow({
     return headers;
   }, [token]);
 
+  // Find current user's profile/username
+  const currentMember = conversation.members.find((m) => m.userId === currentUserId);
+  const currentUsername = currentMember?.user.displayName || currentMember?.user.username || "You";
+
   // Load initial messages and mark conversation as read
   useEffect(() => {
     let isMounted = true;
@@ -46,7 +51,6 @@ export function ChatWindow({
         });
         const data = await res.json();
         if (isMounted && res.ok && data.success) {
-          // Messages arrive in reverse-chronological order from API, reverse for chat window
           setMessages([...data.data.items].reverse());
           setCursor(data.data.nextCursor);
           setHasMore(data.data.hasMore);
@@ -71,7 +75,11 @@ export function ChatWindow({
 
     const unsubscribeNewMessage = socketClient.on<MessageResponse>("message:new", (msg) => {
       if (msg.conversationId === conversation.id) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          // Avoid duplicate messages
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       }
     });
 
@@ -108,13 +116,13 @@ export function ChatWindow({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
 
-    // Send typing start event
-    socketClient.sendTypingStart(conversation.id);
+    // Send typing start event with username
+    socketClient.sendTypingStart(conversation.id, currentUsername, currentUserId);
 
     // Debounce typing stop
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
-      socketClient.sendTypingStop(conversation.id);
+      socketClient.sendTypingStop(conversation.id, currentUsername, currentUserId);
     }, 1500);
   };
 
@@ -128,7 +136,7 @@ export function ChatWindow({
 
     try {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      socketClient.sendTypingStop(conversation.id);
+      socketClient.sendTypingStop(conversation.id, currentUsername, currentUserId);
 
       const res = await fetch(`/api/v1/conversations/${conversation.id}/messages`, {
         method: "POST",
@@ -183,18 +191,18 @@ export function ChatWindow({
   return (
     <div className="flex flex-col h-[680px] bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/70">
         <div>
           <h3 className="font-heading font-bold text-slate-900 text-sm flex items-center gap-2">
             <span>{headerTitle}</span>
             {conversation.isGroup && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-poppin-lilac/10 text-poppin-lilac font-semibold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-poppin-lilac-light text-poppin-lilac font-bold border border-poppin-lilac-border">
                 {conversation.members.length} members
               </span>
             )}
           </h3>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {conversation.isGroup ? "Group Hub" : "Direct Conversation"}
+          <span className="text-[11px] text-slate-500 font-mono">
+            {conversation.isGroup ? "Real-time Group" : "Direct Conversation"}
           </span>
         </div>
 
@@ -216,7 +224,7 @@ export function ChatWindow({
             <button
               type="button"
               onClick={loadOlderMessages}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-poppin-lilac font-semibold hover:underline"
             >
               Load older messages
             </button>
@@ -224,9 +232,9 @@ export function ChatWindow({
         )}
 
         {isLoading ? (
-          <div className="text-center py-12 text-xs text-gray-400">Loading messages...</div>
+          <div className="text-center py-12 text-xs text-slate-400">Loading messages...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center py-12 text-xs text-gray-400">
+          <div className="text-center py-12 text-xs text-slate-400">
             No messages in this chat yet. Say hi!
           </div>
         ) : (
@@ -238,15 +246,15 @@ export function ChatWindow({
                 className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}
               >
                 {!isSelf && conversation.isGroup && (
-                  <span className="text-3xs text-gray-400 mb-1 px-1">
+                  <span className="text-[10px] text-slate-400 mb-1 px-1 font-semibold">
                     {msg.sender.displayName || msg.sender.username}
                   </span>
                 )}
                 <div
-                  className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-xs leading-relaxed ${
+                  className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
                     isSelf
-                      ? "bg-poppin-navy text-white rounded-br-xs shadow-xs"
-                      : "bg-white border border-slate-200/80 text-slate-800 rounded-bl-xs shadow-xs"
+                      ? "bg-poppin-lilac text-white rounded-br-xs shadow-xs font-medium"
+                      : "bg-white border border-slate-200/90 text-slate-900 rounded-bl-xs shadow-xs"
                   }`}
                 >
                   <p className="whitespace-pre-line">{msg.content}</p>
@@ -262,13 +270,15 @@ export function ChatWindow({
           })
         )}
 
-        {/* Typing Indicator */}
+        {/* Real-Time Typing Symbol / Bubble */}
         {typingUsers.size > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 py-1 px-2 font-mono">
-            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce" />
-            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-delay:0.2s]" />
-            <span className="inline-block w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-delay:0.4s]" />
-            <span className="ml-1 text-[11px]">
+          <div className="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 shadow-2xs">
+            <div className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-duration:0.8s]" />
+              <span className="w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
+              <span className="w-1.5 h-1.5 bg-poppin-lilac rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
+            </div>
+            <span className="text-[11px] font-semibold text-slate-700">
               {Array.from(typingUsers).join(", ")} {typingUsers.size === 1 ? "is" : "are"} typing...
             </span>
           </div>
@@ -285,17 +295,23 @@ export function ChatWindow({
           onChange={handleInputChange}
           placeholder="Type a message... (Enter to send)"
           maxLength={4000}
-          className="flex-1 p-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-poppin-lilac bg-slate-50 focus:bg-white transition-colors"
+          className="flex-1 p-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-poppin-lilac focus:ring-1 focus:ring-poppin-lilac bg-slate-50 focus:bg-white transition-colors"
         />
         <button
           type="submit"
           disabled={!inputText.trim() || isSending}
-          className="px-4 py-2.5 bg-poppin-navy text-white rounded-xl text-xs font-bold hover:bg-poppin-navy/90 disabled:opacity-40 transition shadow-2xs active:scale-95"
+          className="px-4 py-2.5 bg-poppin-lilac text-white rounded-xl text-xs font-bold hover:bg-poppin-lilac-hover disabled:opacity-40 transition shadow-2xs active:scale-95 flex items-center gap-1.5"
         >
-          Send
+          {isSending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <>
+              <span>Send</span>
+              <Send className="w-3 h-3" />
+            </>
+          )}
         </button>
       </form>
     </div>
   );
 }
-

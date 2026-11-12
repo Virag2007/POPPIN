@@ -47,9 +47,9 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
     this.apiSecret = apiSecret;
 
     cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
+      cloud_name: this.cloudName,
+      api_key: this.apiKey,
+      api_secret: this.apiSecret,
       secure: true,
     });
   }
@@ -92,16 +92,23 @@ export class S3StorageAdapter implements StorageAdapter {
   private bucket: string;
   private region: string;
 
-  constructor(bucket: string, region: string) {
+  constructor(
+    bucket: string,
+    region: string,
+    accessKeyId?: string,
+    secretAccessKey?: string,
+    endpoint?: string
+  ) {
     this.bucket = bucket;
     this.region = region;
     this.s3Client = new S3Client({
       region,
+      endpoint: endpoint || undefined,
       credentials:
-        process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+        (accessKeyId || process.env.AWS_ACCESS_KEY_ID) && (secretAccessKey || process.env.AWS_SECRET_ACCESS_KEY)
           ? {
-              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+              accessKeyId: accessKeyId || process.env.AWS_ACCESS_KEY_ID!,
+              secretAccessKey: secretAccessKey || process.env.AWS_SECRET_ACCESS_KEY!,
             }
           : undefined,
     });
@@ -111,7 +118,6 @@ export class S3StorageAdapter implements StorageAdapter {
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
     const key = `media/${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${sanitizedName}`;
 
-    // When AWS credentials are configured, execute the PutObjectCommand against S3
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
       await this.s3Client.send(
         new PutObjectCommand({
@@ -154,7 +160,13 @@ export function getStorageProvider(): StorageAdapter {
   }
 
   if (process.env.AWS_S3_BUCKET && process.env.AWS_REGION) {
-    return new S3StorageAdapter(process.env.AWS_S3_BUCKET, process.env.AWS_REGION);
+    return new S3StorageAdapter(
+      process.env.AWS_S3_BUCKET,
+      process.env.AWS_REGION,
+      process.env.AWS_ACCESS_KEY_ID,
+      process.env.AWS_SECRET_ACCESS_KEY,
+      process.env.AWS_S3_ENDPOINT
+    );
   }
 
   return new MockLocalStorageAdapter();

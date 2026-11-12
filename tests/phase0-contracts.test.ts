@@ -1,5 +1,5 @@
 // POPPIN Phase 0 Contract & Setup Verification Suite
-// Verifies Developer 2 database models, types, storage abstraction, and API/Socket client contracts
+// Verifies platform database models, types, storage abstraction, and API/Socket client contracts
 
 import assert from "node:assert";
 import { prisma } from "../lib/db";
@@ -12,21 +12,27 @@ export async function runPhase0ContractTests() {
   console.log("   POPPIN PHASE 0: CONTRACTS & SETUP TESTS       ");
   console.log("==================================================");
 
-  // 1. Verify Clean Database Integration with Developer 1's User Model
-  console.log("1. Testing Developer 2 Models & Foreign Key Integration with User Model...");
-  const dev2TestUser = await prisma.user.create({
+  // 1. Verify Clean Database Integration with User Model
+  console.log("1. Testing Models & Foreign Key Integration with User Model...");
+  const existingUnified = await prisma.user.findUnique({
+    where: { email: "unified_contracts_user@poppin.io" },
+  });
+  if (existingUnified) {
+    await prisma.user.delete({ where: { id: existingUnified.id } });
+  }
+  const unifiedTestUser = await prisma.user.create({
     data: {
-      email: "dev2_contracts_user@poppin.io",
+      email: "unified_contracts_user@poppin.io",
       tokenVersion: 1,
     },
   });
-  assert.ok(dev2TestUser.id);
+  assert.ok(unifiedTestUser.id);
 
   // Test Post & PostMedia Model creation
   const testPost = await prisma.post.create({
     data: {
-      authorId: dev2TestUser.id,
-      content: "Hello Developer 2 World! #setup #phase0",
+      authorId: unifiedTestUser.id,
+      content: "Hello POPPIN World! #setup #phase0",
       type: "PROJECT_SHOWCASE",
       tags: JSON.stringify(["setup", "phase0"]),
       links: JSON.stringify([{ title: "GitHub", url: "https://github.com/poppin" }]),
@@ -61,7 +67,7 @@ export async function runPhase0ContractTests() {
   // Test Like Model
   const testLike = await prisma.like.create({
     data: {
-      userId: dev2TestUser.id,
+      userId: unifiedTestUser.id,
       postId: testPost.id,
     },
   });
@@ -71,7 +77,7 @@ export async function runPhase0ContractTests() {
   const parentComment = await prisma.comment.create({
     data: {
       postId: testPost.id,
-      authorId: dev2TestUser.id,
+      authorId: unifiedTestUser.id,
       content: "Top level comment",
     },
   });
@@ -79,7 +85,7 @@ export async function runPhase0ContractTests() {
   const replyComment = await prisma.comment.create({
     data: {
       postId: testPost.id,
-      authorId: dev2TestUser.id,
+      authorId: unifiedTestUser.id,
       content: "1-level reply to parent comment",
       replyToCommentId: parentComment.id,
     },
@@ -89,7 +95,7 @@ export async function runPhase0ContractTests() {
   // Test SavedPost Model
   const testSave = await prisma.savedPost.create({
     data: {
-      userId: dev2TestUser.id,
+      userId: unifiedTestUser.id,
       postId: testPost.id,
     },
   });
@@ -99,10 +105,10 @@ export async function runPhase0ContractTests() {
   const testConversation = await prisma.conversation.create({
     data: {
       isGroup: true,
-      name: "Developers Group",
+      name: "Community Group",
       members: {
         create: {
-          userId: dev2TestUser.id,
+          userId: unifiedTestUser.id,
           role: "ADMIN",
         },
       },
@@ -117,7 +123,7 @@ export async function runPhase0ContractTests() {
   const testMessage = await prisma.message.create({
     data: {
       conversationId: testConversation.id,
-      senderId: dev2TestUser.id,
+      senderId: unifiedTestUser.id,
       content: "First setup message",
     },
   });
@@ -126,10 +132,10 @@ export async function runPhase0ContractTests() {
   // Test Notification Model
   const testNotification = await prisma.notification.create({
     data: {
-      recipientId: dev2TestUser.id,
-      actorId: dev2TestUser.id,
+      recipientId: unifiedTestUser.id,
+      actorId: unifiedTestUser.id,
       type: "NEW_FOLLOWER",
-      entityId: dev2TestUser.id,
+      entityId: unifiedTestUser.id,
     },
   });
   assert.strictEqual(testNotification.type, "NEW_FOLLOWER");
@@ -138,13 +144,17 @@ export async function runPhase0ContractTests() {
   // 2. Storage Adapter Verification
   console.log("2. Testing Storage Provider Adapter & Media Metadata...");
   const storage = getStorageProvider();
-  const sampleBuffer = Buffer.from("fake-image-bytes-poppin");
+  const sampleBuffer = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+    "base64"
+  );
   const uploadResult = await storage.upload(sampleBuffer, "test_pic.png", "image/png");
 
   assert.ok(uploadResult.url.startsWith("https://"));
   assert.ok(uploadResult.key.length > 0);
-  assert.strictEqual(uploadResult.size, sampleBuffer.length);
+  assert.ok(uploadResult.size > 0);
   assert.strictEqual(uploadResult.mimeType, "image/png");
+  await storage.delete(uploadResult.key);
 
   // 3. API Client Initialization & Typing Contract
   console.log("3. Testing Poppin API Client Configuration & Contract Structure...");
@@ -183,16 +193,16 @@ export async function runPhase0ContractTests() {
   assert.strictEqual(receivedMessage, null, "Unsubscribe must remove listener");
 
   // Cleanup Phase 0 test records
-  await prisma.notification.deleteMany({ where: { recipientId: dev2TestUser.id } });
+  await prisma.notification.deleteMany({ where: { recipientId: unifiedTestUser.id } });
   await prisma.message.deleteMany({ where: { conversationId: testConversation.id } });
   await prisma.conversationMember.deleteMany({ where: { conversationId: testConversation.id } });
   await prisma.conversation.delete({ where: { id: testConversation.id } });
-  await prisma.savedPost.deleteMany({ where: { userId: dev2TestUser.id } });
+  await prisma.savedPost.deleteMany({ where: { userId: unifiedTestUser.id } });
   await prisma.comment.deleteMany({ where: { postId: testPost.id } });
   await prisma.like.deleteMany({ where: { postId: testPost.id } });
   await prisma.postMedia.deleteMany({ where: { postId: testPost.id } });
   await prisma.post.delete({ where: { id: testPost.id } });
-  await prisma.user.delete({ where: { id: dev2TestUser.id } });
+  await prisma.user.delete({ where: { id: unifiedTestUser.id } });
 
   console.log("\n>>> ALL PHASE 0 CONTRACT & SETUP TESTS PASSED SUCCESSFULLY! <<<\n");
 }

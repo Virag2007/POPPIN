@@ -26,7 +26,7 @@ export class ConnectionService {
     const follow = await ConnectionRepository.createFollow(currentUserId, targetUserId);
     const counts = await ConnectionRepository.getFollowCounts(currentUserId);
 
-    // Documented follow event contract for Developer 2's notification integration
+    // Documented follow event contract for notification integration
     const followEvent = {
       event: "NEW_FOLLOWER",
       followerId: currentUserId,

@@ -129,7 +129,7 @@ export class MessagingService {
       throw new AppError("Cannot start a conversation with yourself", 400, "CANNOT_MESSAGE_SELF");
     }
 
-    // Verify Developer 1 blocking contract
+    // Verify bidirectional blocking contract
     const isBlocked = await ConnectionRepository.isBlockedOrBlocking(userId, recipientId);
     if (isBlocked) {
       throw new AppError("Cannot message a blocked user", 403, "BLOCKED_USER");

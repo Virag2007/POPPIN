@@ -39,6 +39,21 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitForUnreadCount(expectedCount: number, token: string, timeoutMs = 4000): Promise<number> {
+  const start = Date.now();
+  let count = -1;
+  while (Date.now() - start < timeoutMs) {
+    const res = await getUnreadCountHandler(
+      createJsonRequest("/api/v1/notifications/unread-count", "GET", undefined, { token })
+    );
+    const json = await res.json();
+    count = json.data?.unreadCount ?? -1;
+    if (count === expectedCount) return count;
+    await delay(100);
+  }
+  return count;
+}
+
 export async function runPhase5NotificationsTests() {
   console.log("\n==================================================");
   console.log("   POPPIN PHASE 5: NOTIFICATIONS TESTS           ");
@@ -159,13 +174,8 @@ export async function runPhase5NotificationsTests() {
       params: Promise.resolve({ postId: post.id }),
     });
     assert.strictEqual(bobLikeRes.status, 200);
-    await delay(150);
-
-    aliceUnreadRes = await getUnreadCountHandler(
-      createJsonRequest("/api/v1/notifications/unread-count", "GET", undefined, { token: aliceToken })
-    );
-    aliceUnreadJson = await aliceUnreadRes.json();
-    assert.strictEqual(aliceUnreadJson.data.unreadCount, 1, "Bob's like must increment Alice's unread count to 1");
+    const unreadAfterLike = await waitForUnreadCount(1, aliceToken);
+    assert.strictEqual(unreadAfterLike, 1, "Bob's like must increment Alice's unread count to 1");
 
     // 2. Post Comment Notification Trigger & Self-Notification Prevention
     console.log("2. Testing Post Comment Notification Trigger...");
@@ -200,13 +210,8 @@ export async function runPhase5NotificationsTests() {
       params: Promise.resolve({ postId: post.id }),
     });
     assert.strictEqual(bobCommentRes.status, 201);
-    await delay(150);
-
-    aliceUnreadRes = await getUnreadCountHandler(
-      createJsonRequest("/api/v1/notifications/unread-count", "GET", undefined, { token: aliceToken })
-    );
-    aliceUnreadJson = await aliceUnreadRes.json();
-    assert.strictEqual(aliceUnreadJson.data.unreadCount, 2, "Bob's comment must increment Alice's unread count to 2");
+    const unreadAfterComment = await waitForUnreadCount(2, aliceToken);
+    assert.strictEqual(unreadAfterComment, 2, "Bob's comment must increment Alice's unread count to 2");
 
     // 3. New Follower Notification Trigger
     console.log("3. Testing New Follower Notification Trigger...");
@@ -220,13 +225,8 @@ export async function runPhase5NotificationsTests() {
       params: Promise.resolve({ userId: alice.id }),
     });
     assert.strictEqual(followRes.status, 201);
-    await delay(150);
-
-    aliceUnreadRes = await getUnreadCountHandler(
-      createJsonRequest("/api/v1/notifications/unread-count", "GET", undefined, { token: aliceToken })
-    );
-    aliceUnreadJson = await aliceUnreadRes.json();
-    assert.strictEqual(aliceUnreadJson.data.unreadCount, 3, "New follower must increment Alice's unread count to 3");
+    const unreadAfterFollow = await waitForUnreadCount(3, aliceToken);
+    assert.strictEqual(unreadAfterFollow, 3, "New follower must increment Alice's unread count to 3");
 
     // 4. New Message Notification Trigger
     console.log("4. Testing New Message Notification Trigger...");
@@ -252,13 +252,8 @@ export async function runPhase5NotificationsTests() {
       params: Promise.resolve({ conversationId }),
     });
     assert.strictEqual(msgRes.status, 201);
-    await delay(150);
-
-    aliceUnreadRes = await getUnreadCountHandler(
-      createJsonRequest("/api/v1/notifications/unread-count", "GET", undefined, { token: aliceToken })
-    );
-    aliceUnreadJson = await aliceUnreadRes.json();
-    assert.strictEqual(aliceUnreadJson.data.unreadCount, 4, "New message must increment Alice's unread count to 4");
+    const unreadAfterMessage = await waitForUnreadCount(4, aliceToken);
+    assert.strictEqual(unreadAfterMessage, 4, "New message must increment Alice's unread count to 4");
 
     // Check socket notifications received
     assert.ok(receivedNotifications.length >= 4, "Realtime socket broadcaster must deliver notifications");

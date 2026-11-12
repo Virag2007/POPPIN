@@ -1,4 +1,4 @@
-// POPPIN Developer 2: Server-Side Real-time Broadcaster
+// POPPIN Server-Side Real-time Broadcaster
 // Dispatches real-time events to room listeners and socket clients
 
 import { EventEmitter } from "node:events";

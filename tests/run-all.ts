@@ -1,3 +1,6 @@
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { runPhase0ContractTests } from "./phase0-contracts.test";
 import { runPhase1PostsTests } from "./phase1-posts.test";
 import { runPhase2EngagementTests } from "./phase2-engagement.test";
@@ -12,6 +15,9 @@ import { runPhase4Tests } from "./phase4.test";
 import { runPhase5Tests } from "./phase5.test";
 import { runE2EIntegrationTests } from "./e2e-integration.test";
 import { runSecurityAuditTests } from "./security-audit.test";
+import { runPhase7CommunitiesSearchTests } from "./phase7-communities-search.test";
+import { runCloudinaryIntegrationTests } from "./cloudinary-integration.test";
+import { runLivePostgresVerification } from "./test-live-postgres";
 
 async function runAll() {
   console.log("==================================================");
@@ -35,6 +41,9 @@ async function runAll() {
     await runPhase5Tests();
     await runE2EIntegrationTests();
     await runSecurityAuditTests();
+    await runPhase7CommunitiesSearchTests();
+    await runCloudinaryIntegrationTests();
+    await runLivePostgresVerification();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(2);
     console.log("==================================================");

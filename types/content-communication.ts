@@ -1,4 +1,4 @@
-// POPPIN Developer 2: Content & Communication Type Definitions
+// POPPIN Content & Communication Type Definitions
 // Scope: Posts, Media, Engagement, Feed, Messaging & Notifications
 
 export type PostType =

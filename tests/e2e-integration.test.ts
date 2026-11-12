@@ -34,18 +34,45 @@ function createJsonRequest(url: string, method: string, body?: any, token?: stri
 export async function runE2EIntegrationTests() {
   console.log("=== Starting End-to-End Integration Suite: Full Identity & User Management Lifecycle ===");
 
-  // Reset database for clean test run
-  await prisma.userReport.deleteMany();
-  await prisma.block.deleteMany();
-  await prisma.follow.deleteMany();
-  await prisma.onboarding.deleteMany();
-  await prisma.privacySettings.deleteMany();
-  await prisma.profile.deleteMany();
-  await prisma.passwordResetToken.deleteMany();
-  await prisma.user.deleteMany({
+  const e2eEmails = ["e2e_alice@poppin.io", "e2e_bob@poppin.io"];
+  await prisma.userReport.deleteMany({
     where: {
-      email: { in: ["e2e_alice@poppin.io", "e2e_bob@poppin.io"] },
+      OR: [
+        { reporter: { email: { in: e2eEmails } } },
+        { reportedUser: { email: { in: e2eEmails } } },
+      ],
     },
+  });
+  await prisma.block.deleteMany({
+    where: {
+      OR: [
+        { blocker: { email: { in: e2eEmails } } },
+        { blocked: { email: { in: e2eEmails } } },
+      ],
+    },
+  });
+  await prisma.follow.deleteMany({
+    where: {
+      OR: [
+        { follower: { email: { in: e2eEmails } } },
+        { following: { email: { in: e2eEmails } } },
+      ],
+    },
+  });
+  await prisma.onboarding.deleteMany({
+    where: { user: { email: { in: e2eEmails } } },
+  });
+  await prisma.privacySettings.deleteMany({
+    where: { user: { email: { in: e2eEmails } } },
+  });
+  await prisma.profile.deleteMany({
+    where: { user: { email: { in: e2eEmails } } },
+  });
+  await prisma.passwordResetToken.deleteMany({
+    where: { user: { email: { in: e2eEmails } } },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { in: e2eEmails } },
   });
 
   // Step 1: Register Alice

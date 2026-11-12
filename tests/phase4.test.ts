@@ -25,21 +25,35 @@ function createJsonRequest(url: string, method: string, body?: any, token?: stri
 export async function runPhase4Tests() {
   console.log("--- Starting Phase 4 Tests: Connections & Follow Relationships ---");
 
-  // Clean data
-  await prisma.follow.deleteMany();
-  await prisma.block.deleteMany();
-  await prisma.profile.deleteMany();
-  await prisma.user.deleteMany({
+  const testConnEmails = [
+    "conn_alice@example.com",
+    "conn_bob@example.com",
+    "conn_charlie@example.com",
+    "conn_david@example.com",
+  ];
+
+  // Clean data for test users
+  await prisma.follow.deleteMany({
     where: {
-      email: {
-        in: [
-          "conn_alice@example.com",
-          "conn_bob@example.com",
-          "conn_charlie@example.com",
-          "conn_david@example.com",
-        ],
-      },
+      OR: [
+        { follower: { email: { in: testConnEmails } } },
+        { following: { email: { in: testConnEmails } } },
+      ],
     },
+  });
+  await prisma.block.deleteMany({
+    where: {
+      OR: [
+        { blocker: { email: { in: testConnEmails } } },
+        { blocked: { email: { in: testConnEmails } } },
+      ],
+    },
+  });
+  await prisma.profile.deleteMany({
+    where: { user: { email: { in: testConnEmails } } },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { in: testConnEmails } },
   });
 
   // Create Alice

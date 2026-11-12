@@ -24,22 +24,45 @@ function createJsonRequest(url: string, method: string, body?: any, token?: stri
 export async function runPhase5Tests() {
   console.log("--- Starting Phase 5 Tests: Account Settings & Safety ---");
 
-  // Clean data
-  await prisma.userReport.deleteMany();
-  await prisma.block.deleteMany();
-  await prisma.follow.deleteMany();
-  await prisma.privacySettings.deleteMany();
-  await prisma.profile.deleteMany();
-  await prisma.user.deleteMany({
+  const testSafetyEmails = [
+    "safety_user1@example.com",
+    "safety_user2@example.com",
+    "updated_email@example.com",
+  ];
+
+  // Clean data for test users
+  await prisma.userReport.deleteMany({
     where: {
-      email: {
-        in: [
-          "safety_user1@example.com",
-          "safety_user2@example.com",
-          "updated_email@example.com",
-        ],
-      },
+      OR: [
+        { reporter: { email: { in: testSafetyEmails } } },
+        { reportedUser: { email: { in: testSafetyEmails } } },
+      ],
     },
+  });
+  await prisma.block.deleteMany({
+    where: {
+      OR: [
+        { blocker: { email: { in: testSafetyEmails } } },
+        { blocked: { email: { in: testSafetyEmails } } },
+      ],
+    },
+  });
+  await prisma.follow.deleteMany({
+    where: {
+      OR: [
+        { follower: { email: { in: testSafetyEmails } } },
+        { following: { email: { in: testSafetyEmails } } },
+      ],
+    },
+  });
+  await prisma.privacySettings.deleteMany({
+    where: { user: { email: { in: testSafetyEmails } } },
+  });
+  await prisma.profile.deleteMany({
+    where: { user: { email: { in: testSafetyEmails } } },
+  });
+  await prisma.user.deleteMany({
+    where: { email: { in: testSafetyEmails } },
   });
 
   // User 1

@@ -9,6 +9,22 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   reactStrictMode: true,
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "storage.poppin.io",
+      },
+    ],
+  },
 
   async headers() {
     if (!isProd) {

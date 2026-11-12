@@ -146,7 +146,7 @@ export async function runPhase1PostsTests() {
       { title: "Demo App", url: "https://poppin-demo.io" },
       { title: "GitHub Repo", url: "https://github.com/poppin/app" },
     ],
-    tags: ["#Showcase", "TypeScript", "#Poppin_Dev2"],
+    tags: ["#Showcase", "TypeScript", "#Poppin_Community"],
     media: [
       {
         url: "https://storage.poppin.io/img1.png",
@@ -181,7 +181,7 @@ export async function runPhase1PostsTests() {
   assert.strictEqual(multiImageJson.data.media[2].order, 2);
   assert.strictEqual(multiImageJson.data.links.length, 2);
   // Check tag normalization (lowercase, stripped hashtags)
-  assert.deepStrictEqual(multiImageJson.data.tags, ["showcase", "typescript", "poppin_dev2"]);
+  assert.deepStrictEqual(multiImageJson.data.tags, ["showcase", "typescript", "poppin_community"]);
 
   const createdPostId = multiImageJson.data.id;
 
@@ -259,7 +259,7 @@ export async function runPhase1PostsTests() {
 
   // 7. Media Upload API
   console.log("7. Testing Media Upload API (POST /api/v1/media/upload)...");
-  const validBase64 = Buffer.from("fake-png-binary-content").toString("base64");
+  const validBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   const uploadReq = createJsonRequest("/api/v1/media/upload", "POST", {
     fileName: "profile_banner.png",
     mimeType: "image/png",

@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Community } from "@/types";
-import { INITIAL_COMMUNITIES } from "@/lib/mock-communities";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   Layers,
   Users,
@@ -13,15 +13,19 @@ import {
   Search,
   X,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 
 const CATEGORIES = ["All", "Design", "Engineering", "AI & Research", "Founders"];
 
 export default function CommunitiesPage() {
-  const { user } = useAuth();
-  const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
+  const { user, token } = useAuth();
+  const [communities, setCommunities] = useState<Community[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Create Community Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -33,67 +37,116 @@ export default function CommunitiesPage() {
   const [avatar, setAvatar] = useState("");
   const [coverImage, setCoverImage] = useState("");
 
-  const filteredCommunities = communities.filter((c) => {
-    const matchesCategory =
-      activeCategory === "All" || c.category.toLowerCase() === activeCategory.toLowerCase();
-    const matchesSearch =
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.slug.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const loadCommunities = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const params = new URLSearchParams();
+      if (activeCategory !== "All") params.set("category", activeCategory);
+      if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
-  const handleToggleJoin = (commId: string) => {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/v1/communities?${params.toString()}`, { headers });
+      const data = await res.json();
+
+      if (res.ok && data.success && data.data?.items) {
+        setCommunities(data.data.items);
+      }
+    } catch {
+      // Keep existing list on failure
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeCategory, searchQuery, token]);
+
+  useEffect(() => {
+    loadCommunities();
+  }, [loadCommunities]);
+
+  const handleToggleJoin = async (comm: Community) => {
+    const wasMember = !!comm.isMember;
+
+    // Optimistic UI update
     setCommunities((prev) =>
       prev.map((c) => {
-        if (c.id === commId) {
-          const wasMember = !!c.isMember;
+        if (c.id === comm.id) {
           return {
             ...c,
             isMember: !wasMember,
-            membersCount: wasMember ? c.membersCount - 1 : c.membersCount + 1,
+            membersCount: wasMember ? Math.max(0, c.membersCount - 1) : c.membersCount + 1,
           };
         }
         return c;
       })
     );
+
+    try {
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const method = wasMember ? "DELETE" : "POST";
+      const res = await fetch(`/api/v1/communities/${comm.slug}/join`, {
+        method,
+        headers,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        // Rollback on failure
+        loadCommunities();
+      }
+    } catch {
+      loadCommunities();
+    }
   };
 
-  const handleCreateCommunity = (e: React.FormEvent) => {
+  const handleCreateCommunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !slug.trim()) return;
 
-    const newComm: Community = {
-      id: "comm_" + Date.now(),
-      slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-      name: name.trim(),
-      tagline: tagline.trim() || "A community on Poppin.",
-      description: desc.trim() || "Welcome to our hub.",
-      category,
-      avatar:
-        avatar.trim() ||
-        "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80",
-      coverImage:
-        coverImage.trim() ||
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80",
-      membersCount: 1,
-      isMember: true,
-      rules: ["Be respectful and contribute thoughtful ideas."],
-      moderators: [
-        {
-          id: user?.id || "admin",
-          username: "you",
-          displayName: "You",
-        },
-      ],
-    };
+    try {
+      setIsSubmitting(true);
+      setCreateError(null);
 
-    setCommunities((prev) => [newComm, ...prev]);
-    setShowCreateModal(false);
-    setName("");
-    setSlug("");
-    setTagline("");
-    setDesc("");
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const res = await fetch("/api/v1/communities", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: name.trim(),
+          slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+          tagline: tagline.trim() || undefined,
+          description: desc.trim() || undefined,
+          category,
+          avatar: avatar.trim() || undefined,
+          coverImage: coverImage.trim() || undefined,
+          rules: ["Critique the work constructively, not the person."],
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error?.message || "Failed to create community");
+      }
+
+      setShowCreateModal(false);
+      setName("");
+      setSlug("");
+      setTagline("");
+      setDesc("");
+      setAvatar("");
+      setCoverImage("");
+      loadCommunities();
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create hub");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -153,89 +206,110 @@ export default function CommunitiesPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search communities..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-poppin-navy placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-poppin-lilac outline-none transition-all"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-poppin-navy placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-poppin-lilac outline-hidden transition-all"
           />
         </div>
       </div>
 
       {/* Communities Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-        {filteredCommunities.map((comm) => (
-          <div
-            key={comm.id}
-            className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-300 transition-all overflow-hidden flex flex-col justify-between group"
-          >
-            {/* Card Cover & Avatar Header */}
-            <div>
-              <div className="h-32 w-full bg-slate-100 relative overflow-hidden">
-                <img
-                  src={comm.coverImage}
-                  alt={comm.name}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                />
-                <span className="absolute top-3 right-3 px-3 py-1 rounded-full text-2xs font-extrabold uppercase bg-white/95 backdrop-blur-xs text-poppin-navy shadow-xs">
-                  {comm.category}
-                </span>
-              </div>
-
-              <div className="px-6 pt-0 pb-4 relative">
-                {/* Avatar */}
-                <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-md -mt-8 relative z-10 overflow-hidden mb-3 border border-slate-200">
+      {isLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+          <Loader2 className="w-8 h-8 animate-spin text-poppin-lilac mb-3" />
+          <p className="text-xs font-semibold">Loading interest hubs...</p>
+        </div>
+      ) : communities.length === 0 ? (
+        <div className="py-16 text-center bg-white rounded-3xl border border-slate-200 p-8">
+          <Layers className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-slate-800">No communities found</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Try adjusting your search query or create the first hub in this category!
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          {communities.map((comm) => (
+            <div
+              key={comm.id}
+              className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-300 transition-all overflow-hidden flex flex-col justify-between group"
+            >
+              {/* Card Cover & Avatar Header */}
+              <div>
+                <div className="h-32 w-full bg-slate-100 relative overflow-hidden">
                   <img
-                    src={comm.avatar}
+                    src={
+                      comm.coverImage ||
+                      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80"
+                    }
                     alt={comm.name}
-                    className="w-full h-full object-cover rounded-xl"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
                   />
+                  <span className="absolute top-3 right-3 px-3 py-1 rounded-full text-2xs font-extrabold uppercase bg-white/95 backdrop-blur-xs text-poppin-navy shadow-xs">
+                    {comm.category}
+                  </span>
                 </div>
 
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <Link
-                      href={`/communities/${comm.slug}`}
-                      className="text-lg font-extrabold text-poppin-navy hover:text-poppin-lilac transition-colors tracking-tight flex items-center gap-1.5"
-                    >
-                      <span>{comm.name}</span>
-                    </Link>
-                    <span className="text-xs font-mono font-bold text-slate-400">c/{comm.slug}</span>
+                <div className="px-6 pt-0 pb-4 relative">
+                  {/* Avatar */}
+                  <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-md -mt-8 relative z-10 overflow-hidden mb-3 border border-slate-200">
+                    <img
+                      src={
+                        comm.avatar ||
+                        "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80"
+                      }
+                      alt={comm.name}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleToggleJoin(comm.id)}
-                    className={`min-h-[36px] px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
-                      comm.isMember
-                        ? "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
-                        : "bg-poppin-navy text-white hover:bg-poppin-navy-light shadow-xs"
-                    }`}
-                  >
-                    {comm.isMember ? "Joined" : "Join Hub"}
-                  </button>
-                </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Link
+                        href={`/communities/${comm.slug}`}
+                        className="text-lg font-extrabold text-poppin-navy hover:text-poppin-lilac transition-colors tracking-tight flex items-center gap-1.5"
+                      >
+                        <span>{comm.name}</span>
+                      </Link>
+                      <span className="text-xs font-mono font-bold text-slate-400">c/{comm.slug}</span>
+                    </div>
 
-                <p className="mt-2.5 text-xs text-slate-600 font-medium line-clamp-2 leading-relaxed">
-                  {comm.tagline}
-                </p>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleJoin(comm)}
+                      className={`min-h-[36px] px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
+                        comm.isMember
+                          ? "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
+                          : "bg-poppin-navy text-white hover:bg-poppin-navy-light shadow-xs"
+                      }`}
+                    >
+                      {comm.isMember ? "Joined" : "Join Hub"}
+                    </button>
+                  </div>
+
+                  <p className="mt-2.5 text-xs text-slate-600 font-medium line-clamp-2 leading-relaxed">
+                    {comm.tagline || comm.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card Footer */}
+              <div className="px-6 py-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-poppin-lilac" />
+                  <span>{comm.membersCount} Members</span>
+                </span>
+
+                <Link
+                  href={`/communities/${comm.slug}`}
+                  className="text-poppin-navy font-bold hover:text-poppin-lilac flex items-center gap-1 transition-colors"
+                >
+                  <span>Enter Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
-
-            {/* Card Footer */}
-            <div className="px-6 py-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-poppin-lilac" />
-                <span>{comm.membersCount} Members</span>
-              </span>
-
-              <Link
-                href={`/communities/${comm.slug}`}
-                className="text-poppin-navy font-bold hover:text-poppin-lilac flex items-center gap-1 transition-colors"
-              >
-                <span>Enter Hub</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Create Community Modal */}
       {showCreateModal && (
@@ -251,6 +325,12 @@ export default function CommunitiesPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {createError && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+                {createError}
+              </div>
+            )}
 
             <form onSubmit={handleCreateCommunity} className="space-y-4">
               <div>
@@ -268,7 +348,7 @@ export default function CommunitiesPage() {
                     }
                   }}
                   placeholder="e.g. Generative UI Guild"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-hidden focus:ring-2 focus:ring-poppin-lilac"
                 />
               </div>
 
@@ -284,7 +364,7 @@ export default function CommunitiesPage() {
                     value={slug}
                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
                     placeholder="gen-ui-guild"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono outline-none focus:ring-2 focus:ring-poppin-lilac"
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono outline-hidden focus:ring-2 focus:ring-poppin-lilac"
                   />
                 </div>
               </div>
@@ -296,7 +376,7 @@ export default function CommunitiesPage() {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as Community["category"])}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-hidden focus:ring-2 focus:ring-poppin-lilac"
                 >
                   <option value="Design">Design & Creative</option>
                   <option value="Engineering">Engineering & Systems</option>
@@ -316,7 +396,7 @@ export default function CommunitiesPage() {
                   onChange={(e) => setTagline(e.target.value)}
                   placeholder="A one-sentence summary of the hub's mission"
                   maxLength={100}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm outline-hidden focus:ring-2 focus:ring-poppin-lilac"
                 />
               </div>
 
@@ -329,33 +409,31 @@ export default function CommunitiesPage() {
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   placeholder="What can members expect? What topics are discussed?"
-                  className="w-full p-3 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac resize-none"
+                  className="w-full p-3 rounded-xl border border-slate-300 text-sm outline-hidden focus:ring-2 focus:ring-poppin-lilac resize-none"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Avatar Image URL (Optional)
+                  Community Icon
                 </label>
-                <input
-                  type="url"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-4 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-poppin-lilac"
+                <FileUpload
+                  currentValue={avatar || null}
+                  onUploadSuccess={(file) => setAvatar(file.url)}
+                  onRemove={() => setAvatar("")}
+                  label="Upload community icon"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Cover Image URL (Optional)
+                  Cover Banner
                 </label>
-                <input
-                  type="url"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-4 py-2 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-poppin-lilac"
+                <FileUpload
+                  currentValue={coverImage || null}
+                  onUploadSuccess={(file) => setCoverImage(file.url)}
+                  onRemove={() => setCoverImage("")}
+                  label="Upload community banner"
                 />
               </div>
 
@@ -369,9 +447,11 @@ export default function CommunitiesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-poppin-navy text-white text-sm font-extrabold hover:bg-poppin-navy-light shadow-xs"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 rounded-xl bg-poppin-navy text-white text-sm font-extrabold hover:bg-poppin-navy-light shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
                 >
-                  Launch Hub
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <span>{isSubmitting ? "Launching..." : "Launch Hub"}</span>
                 </button>
               </div>
             </form>

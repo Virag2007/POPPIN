@@ -37,6 +37,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
   // Status
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleAddTag = () => {
@@ -85,9 +86,9 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
     setLinks(links.filter((_, idx) => idx !== index));
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
+    if (files.length === 0) return;
 
     if (media.length + files.length > 10) {
       setErrorMessage("Maximum 10 media files permitted per post");
@@ -98,7 +99,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
     setErrorMessage(null);
 
     try {
-      const uploadPromises = Array.from(files).map(async (file, idx) => {
+      const uploadPromises = files.map(async (file, idx) => {
         const formData = new FormData();
         formData.append("file", file);
 
@@ -128,11 +129,17 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
       });
 
       const uploaded = await Promise.all(uploadPromises);
-      setMedia([...media, ...uploaded]);
+      setMedia((prev) => [...prev, ...uploaded]);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Media upload failed");
     } finally {
       setIsUploadingMedia(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      await processFiles(event.target.files);
       event.target.value = "";
     }
   };
@@ -205,7 +212,26 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        setIsDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+          processFiles(e.dataTransfer.files);
+        }
+      }}
+      className={`bg-white rounded-xl border shadow-sm p-5 mb-6 transition-colors ${
+        isDragging ? "border-blue-500 bg-blue-50/20" : "border-gray-200"
+      }`}
+    >
       <form onSubmit={handleSubmit}>
         {/* Post Type Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-3">

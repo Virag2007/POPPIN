@@ -4,11 +4,11 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { FeedPost } from "@/types";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   Sparkles,
   Image as ImageIcon,
   Tag,
-  X,
   Loader2,
 } from "lucide-react";
 
@@ -99,43 +99,15 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
               className="w-full p-2.5 rounded-2xl border-none text-sm sm:text-base font-medium text-poppin-navy placeholder:text-slate-400 focus:outline-none focus:ring-0 resize-none"
             />
 
-            {/* Attached Image Preview */}
-            {imageUrl.trim() && (
-              <div className="relative mt-2 mb-3 rounded-2xl overflow-hidden border border-slate-200 max-h-60 group">
-                <img
-                  src={imageUrl}
-                  alt="Post attachment"
-                  className="w-full h-full object-cover"
-                  onError={() => {}}
+            {/* Attached Image Preview or Drag and Drop Uploader */}
+            {(showImageInput || imageUrl) && (
+              <div className="mt-2 mb-3">
+                <FileUpload
+                  currentValue={imageUrl || null}
+                  onUploadSuccess={(file) => setImageUrl(file.url)}
+                  onRemove={() => setImageUrl("")}
+                  label="Drag and drop image or click to upload"
                 />
-                <button
-                  type="button"
-                  onClick={() => setImageUrl("")}
-                  className="absolute top-2 right-2 bg-poppin-navy/80 hover:bg-poppin-navy text-white p-1 rounded-full transition-all"
-                  title="Remove image"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Optional Image URL Input */}
-            {showImageInput && !imageUrl && (
-              <div className="flex items-center gap-2 mb-3 mt-1">
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Paste image URL (https://...)"
-                  className="flex-1 px-3.5 py-1.5 rounded-xl border border-slate-300 text-xs outline-none focus:ring-2 focus:ring-poppin-lilac"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowImageInput(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
             )}
 

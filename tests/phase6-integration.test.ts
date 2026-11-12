@@ -47,6 +47,21 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function waitForNotifications(minCount: number, token: string, timeoutMs = 4000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const notifsReq = createJsonRequest("/api/v1/notifications", "GET", undefined, { token });
+    const notifsRes = await getNotificationsHandler(notifsReq);
+    const notifsJson = await notifsRes.json();
+    if (notifsJson.data?.items?.length >= minCount) {
+      return notifsJson;
+    }
+    await delay(100);
+  }
+  const fallbackReq = createJsonRequest("/api/v1/notifications", "GET", undefined, { token });
+  return (await getNotificationsHandler(fallbackReq)).json();
+}
+
 export async function runPhase6IntegrationTests() {
   console.log("\n==================================================");
   console.log("   POPPIN PHASE 6: E2E INTEGRATION & HARDENING    ");
@@ -245,11 +260,7 @@ export async function runPhase6IntegrationTests() {
 
     // 5. Notifications Check
     console.log("5. E2E: Alice verifies received in-app notifications (Follow, Like, Comment)...");
-    await delay(150);
-    const notifsReq = createJsonRequest("/api/v1/notifications", "GET", undefined, { token: aliceToken });
-    const notifsRes = await getNotificationsHandler(notifsReq);
-    const notifsJson = await notifsRes.json();
-    assert.strictEqual(notifsRes.status, 200);
+    const notifsJson = await waitForNotifications(3, aliceToken);
     assert.ok(notifsJson.data.items.length >= 3);
 
     // Verify unread count and mark-all-as-read

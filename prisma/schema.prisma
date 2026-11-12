@@ -1,4 +1,4 @@
-// POPPIN Prisma Schema - Identity & User Management (Developer 1)
+// POPPIN Prisma Schema - Unified Platform Architecture
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -36,7 +36,7 @@ model User {
   reportsSubmitted UserReport[] @relation("Reporter")
   reportsReceived  UserReport[] @relation("ReportedUser")
 
-  // Developer 2: Content & Communication
+  // Content & Communication Models
   posts                  Post[]
   likes                  Like[]
   comments               Comment[]
@@ -45,6 +45,8 @@ model User {
   messagesSent           Message[]
   notificationsReceived  Notification[] @relation("NotificationRecipient")
   notificationsTriggered Notification[] @relation("NotificationActor")
+  communityMemberships   CommunityMember[]
+  media                  Media[]
 }
 
 model PasswordResetToken {
@@ -149,25 +151,28 @@ model UserReport {
 }
 
 // ==========================================
-// DEVELOPER 2: CONTENT & COMMUNICATION MODELS
+// CONTENT & COMMUNICATION MODELS
 // ==========================================
 
 model Post {
-  id        String      @id @default(uuid())
-  authorId  String
-  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String
-  type      String      // UPDATE, PROJECT_SHOWCASE, ACHIEVEMENT, LOOKING_FOR
-  links     String      @default("[]") // JSON string of ExternalLinkItem[]
-  tags      String      @default("[]") // JSON string of string[]
-  media     PostMedia[]
-  likes     Like[]
-  comments  Comment[]
-  saves     SavedPost[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String      @id @default(uuid())
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  communityId String?
+  community   Community?  @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  content     String
+  type        String      // UPDATE, PROJECT_SHOWCASE, ACHIEVEMENT, LOOKING_FOR
+  links       String      @default("[]") // JSON string of ExternalLinkItem[]
+  tags        String      @default("[]") // JSON string of string[]
+  media       PostMedia[]
+  likes       Like[]
+  comments    Comment[]
+  saves       SavedPost[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@index([authorId])
+  @@index([communityId])
   @@index([createdAt])
 }
 
@@ -277,6 +282,61 @@ model Notification {
   createdAt   DateTime @default(now())
 
   @@index([recipientId, isRead])
+  @@index([createdAt])
+}
+
+model Community {
+  id          String            @id @default(uuid())
+  name        String
+  slug        String            @unique
+  tagline     String?
+  description String?
+  category    String            @default("General") // Design, Engineering, AI & Research, Founders, General
+  avatar      String?
+  coverImage  String?
+  rules       String            @default("[]") // JSON string of string[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  members     CommunityMember[]
+  posts       Post[]
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+model CommunityMember {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("MEMBER") // ADMIN, MODERATOR, MEMBER
+  joinedAt    DateTime  @default(now())
+
+  @@unique([communityId, userId])
+  @@index([userId])
+  @@index([communityId])
+}
+
+model Media {
+  id           String   @id @default(uuid())
+  publicId     String   @unique
+  secureUrl    String
+  resourceType String   @default("image")
+  format       String
+  width        Int?
+  height       Int?
+  bytes        Int?
+  folder       String
+  altText      String?
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([folder])
   @@index([createdAt])
 }
 

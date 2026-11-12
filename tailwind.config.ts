@@ -10,17 +10,19 @@ export default {
     extend: {
       colors: {
         poppin: {
-          navy: "#0E1027",
-          "navy-light": "#1B1E3D",
-          lilac: "#9D54F2",
-          "lilac-hover": "#8B3EEB",
-          "lilac-light": "#F6F1FF",
-          "lilac-border": "#E2D3FF",
+          navy: "#0f172a",          // Slate 900
+          "navy-light": "#1e293b",    // Slate 800
+          lilac: "#2563eb",           // Crisp Blue 600
+          "lilac-hover": "#1d4ed8",   // Blue 700
+          "lilac-light": "#eff6ff",   // Blue 50
+          "lilac-border": "#bfdbfe",  // Blue 200
+          ember: "#ea580c",           // Upvote Orange 600
+          "ember-light": "#fff7ed",   // Orange 50
         },
       },
       fontFamily: {
-        sans: ["var(--font-jakarta)", "sans-serif"],
-        display: ["var(--font-unbounded)", "sans-serif"],
+        sans: ["var(--font-jakarta)", "system-ui", "-apple-system", "sans-serif"],
+        display: ["var(--font-unbounded)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         "2xl": "16px",
@@ -30,5 +32,3 @@ export default {
   },
   plugins: [],
 } satisfies Config;
-
-

@@ -114,6 +114,27 @@ function ExploreContent() {
     "all" | "creators" | "projects" | "topics"
   >("all");
   const [creators, setCreators] = useState(FEATURED_CREATORS);
+  const [topics, setTopics] = useState(TRENDING_TOPICS);
+
+  React.useEffect(() => {
+    async function loadExploreData() {
+      try {
+        const res = await fetch("/api/v1/explore");
+        const data = await res.json();
+        if (res.ok && data.success && data.data) {
+          if (data.data.featuredCreators?.length > 0) {
+            setCreators(data.data.featuredCreators);
+          }
+          if (data.data.trendingTopics?.length > 0) {
+            setTopics(data.data.trendingTopics);
+          }
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+    loadExploreData();
+  }, []);
 
   const toggleFollow = (username: string) => {
     setCreators((prev) =>
@@ -123,7 +144,7 @@ function ExploreContent() {
     );
   };
 
-  const filteredTopics = TRENDING_TOPICS.filter((t) =>
+  const filteredTopics = topics.filter((t) =>
     t.tag.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

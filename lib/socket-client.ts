@@ -1,4 +1,4 @@
-// POPPIN Developer 2: Typed Real-time Socket Client Abstraction
+// POPPIN Typed Real-time Socket Client Abstraction
 // Handles real-time messaging, typing indicators, and in-app notifications
 
 import { RealtimeClientEvent, RealtimeServerEvent } from "@/types";

@@ -67,6 +67,22 @@ export default function CommunityDetailPage({
   >("discussions");
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Fetch real community details from backend
+  React.useEffect(() => {
+    async function fetchCommunity() {
+      try {
+        const res = await fetch(`/api/v1/communities/${resolvedParams.slug}`);
+        const data = await res.json();
+        if (res.ok && data.success && data.data) {
+          setCommunity(data.data);
+        }
+      } catch {
+        // Keep fallback
+      }
+    }
+    fetchCommunity();
+  }, [resolvedParams.slug]);
+
   // Mock community discussion posts
   const [communityPosts, setCommunityPosts] = useState<FeedPost[]>([
     {
@@ -203,14 +219,28 @@ export default function CommunityDetailPage({
     },
   ]);
 
-  const toggleJoin = () => {
+  const toggleJoin = async () => {
+    const wasMember = community.isMember;
     setCommunity((prev) => ({
       ...prev,
       isMember: !prev.isMember,
       membersCount: prev.isMember
-        ? prev.membersCount - 1
+        ? Math.max(0, prev.membersCount - 1)
         : prev.membersCount + 1,
     }));
+
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null;
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      await fetch(`/api/v1/communities/${resolvedParams.slug}/join`, {
+        method: wasMember ? "DELETE" : "POST",
+        headers,
+      });
+    } catch {
+      // rollback if failed
+    }
   };
 
   const handleCreatePost = (newPost: FeedPost) => {

@@ -100,7 +100,7 @@ export async function runPhase2Tests() {
     "/api/v1/users/me/profile",
     "POST",
     {
-      username: "alice_dev2",
+      username: "alice_alternate",
     },
     aliceToken
   );

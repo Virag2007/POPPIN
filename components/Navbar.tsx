@@ -81,19 +81,21 @@ export function Navbar() {
             </span>
           </div>
 
-          {/* Search Bar Trigger */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            className="flex-1 max-w-xs md:max-w-md hidden sm:flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-transparent hover:border-slate-300 text-xs text-slate-500 transition shadow-2xs"
-          >
-            <span className="flex items-center gap-2 truncate">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>Search creators, hubs, topics...</span>
-            </span>
-            <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-400 shadow-2xs">
-              ⌘K
-            </kbd>
-          </button>
+          {/* Search Bar Trigger - only for authenticated members */}
+          {user && (
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex-1 max-w-xs md:max-w-md hidden sm:flex items-center justify-between px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-transparent hover:border-slate-300 text-xs text-slate-500 transition shadow-2xs"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <Search className="w-3.5 h-3.5 text-slate-400" />
+                <span>Search creators, hubs, topics...</span>
+              </span>
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-400 shadow-2xs">
+                ⌘K
+              </kbd>
+            </button>
+          )}
 
           {/* Desktop Navigation Links */}
           <nav

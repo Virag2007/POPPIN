@@ -260,8 +260,8 @@ export default function CommunitiesPage() {
 
             <form onSubmit={handleCreateCommunity} className="mt-4 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
-                  Community Name
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Community name
                 </label>
                 <input
                   type="text"
@@ -279,8 +279,8 @@ export default function CommunitiesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
-                  Subreddit URL (slug)
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Community slug
                 </label>
                 <div className="flex items-center">
                   <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl text-xs font-mono text-slate-500">
@@ -298,8 +298,8 @@ export default function CommunitiesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
-                  Tagline / Short Pitch
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tagline
                 </label>
                 <input
                   type="text"
@@ -311,7 +311,7 @@ export default function CommunitiesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Description
                 </label>
                 <textarea

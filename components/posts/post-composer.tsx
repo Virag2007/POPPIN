@@ -264,8 +264,8 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
       <form onSubmit={handleSubmit}>
         {/* Post Type Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">
-            Post Type:
+          <span className="text-xs font-semibold text-slate-600 mr-1">
+            Post type:
           </span>
           {(
             [

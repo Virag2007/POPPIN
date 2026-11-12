@@ -186,16 +186,13 @@ export default function HomePage() {
             {/* Left Column: Heading, Search & Actions */}
             <div className="lg:col-span-7 flex flex-col items-start text-left">
               {/* Status Badge */}
-              <div className="hero-badge inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-poppin-lilac-light border border-poppin-lilac-border text-xs font-bold text-poppin-lilac mb-6">
-                <span className="w-2 h-2 rounded-full bg-poppin-lilac animate-pulse" />
-                <span>Next-Generation Community Platform</span>
+              <div className="hero-badge inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-medium text-slate-700 mb-6">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Real-time community platform</span>
               </div>
 
               <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
-                Where creators gather, debate, and{" "}
-                <span className="text-poppin-lilac">
-                  ship.
-                </span>
+                Where creators gather, debate, and ship
               </h1>
 
               <p className="hero-desc mt-5 text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
@@ -355,7 +352,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between mb-2">
                   <label
                     htmlFor="handle-probe-input"
-                    className="text-xs font-bold text-slate-700 uppercase tracking-wider"
+                    className="text-xs font-semibold text-slate-700"
                   >
                     Claim your unique handle
                   </label>
@@ -390,13 +387,13 @@ export default function HomePage() {
                   >
                     {probeResult.loading
                       ? "Checking availability..."
-                      : probeResult.reason || "Available! 3-30 characters"}
+                      : probeResult.reason || "Available: 3-30 characters"}
                   </span>
                   <Link
                     href={`/register?username=${encodeURIComponent(handleQuery)}`}
                     className="text-poppin-lilac font-bold hover:underline inline-flex items-center gap-0.5 active:scale-95"
                   >
-                    Claim &rarr;
+                    Claim handle
                   </Link>
                 </div>
               </div>
@@ -411,19 +408,19 @@ export default function HomePage() {
       <section className="py-16 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-poppin-lilac uppercase tracking-wider mb-1">
-              <Flame className="w-4 h-4" />
-              <span>Trending Communities</span>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 mb-1">
+              <Flame className="w-4 h-4 text-poppin-lilac" />
+              <span>Trending communities</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Popular Spaces to Join Right Now
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Popular spaces to join
             </h2>
           </div>
           <Link
             href="/communities"
-            className="inline-flex items-center gap-1 text-sm font-bold text-poppin-lilac hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-poppin-lilac hover:underline"
           >
-            <span>View all communities</span>
+            <span>View all</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -460,8 +457,8 @@ export default function HomePage() {
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>{hub.postsCount} active posts</span>
                 </span>
-                <span className="text-poppin-lilac group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                  Visit &rarr;
+                <span className="text-poppin-lilac group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 font-bold">
+                  Visit community
                 </span>
               </div>
             </Link>
@@ -473,11 +470,11 @@ export default function HomePage() {
       <section className="py-16 bg-white border-t border-b border-slate-200/90">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-xl mb-10">
-            <h2 className="text-xs uppercase tracking-widest font-black text-poppin-lilac mb-1">
-              Core Architecture
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Platform capabilities
             </h2>
-            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Engineered for Real Collaboration
+            <p className="mt-2 text-sm text-slate-600">
+              Built for high concurrency, real-time sync, and structured discussion.
             </p>
           </div>
 

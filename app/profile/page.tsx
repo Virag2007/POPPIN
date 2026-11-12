@@ -686,8 +686,8 @@ export default function OwnProfilePage() {
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Display Name
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Display name
                 </label>
                 <input
                   type="text"
@@ -699,7 +699,7 @@ export default function OwnProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Headline
                 </label>
                 <input
@@ -712,7 +712,7 @@ export default function OwnProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">Bio</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Bio</label>
                 <textarea
                   rows={3}
                   value={bio}
@@ -723,7 +723,7 @@ export default function OwnProfilePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Location
                 </label>
                 <input
@@ -738,8 +738,8 @@ export default function OwnProfilePage() {
 
               {/* Avatar Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
-                  Profile Avatar
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Profile avatar
                 </label>
                 <div
                   onDragOver={(e) => {
@@ -848,8 +848,8 @@ export default function OwnProfilePage() {
 
               {/* Cover Image Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1.5">
-                  Profile Banner Cover
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Profile banner cover
                 </label>
                 <div
                   onDragOver={(e) => {

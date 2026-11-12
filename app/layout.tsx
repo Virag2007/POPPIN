@@ -32,8 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${unbounded.variable}`}>
-      <body className="font-sans antialiased bg-slate-50 text-slate-900 min-h-screen flex flex-col selection:bg-poppin-lilac selection:text-white">
+    <html lang="en" data-type="software" className={`${jakarta.variable} ${unbounded.variable}`}>
+      <head>
+        <meta name="site-kind" content="software" />
+        <meta name="page-type" content="software" />
+      </head>
+      <body className="font-sans antialiased bg-[#F8FAFC] text-slate-900 min-h-screen flex flex-col selection:bg-poppin-lilac selection:text-white">
         {/* WCAG 2.4.1: Bypass Blocks */}
         <a
           href="#main-content"

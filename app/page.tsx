@@ -169,236 +169,281 @@ export default function HomePage() {
       {/* Search Modal Accessible Globally & From Hero */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-10 pb-16 md:pt-16 md:pb-20 border-b border-slate-200 bg-white">
+      {/* Screen 1: Hero Section & Live Product Stage */}
+      <section className="relative overflow-hidden min-h-[calc(100vh-4.5rem)] flex items-center border-b border-slate-200/90 bg-white">
         {/* Subtle grid pattern background */}
         <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          className="absolute inset-0 opacity-[0.025] pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(#1E293B 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
+            backgroundImage: "radial-gradient(#0F172A 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
           }}
         />
 
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          {/* Status Badge */}
-          <div className="hero-badge inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-poppin-lilac-light border border-poppin-lilac-border text-xs font-bold text-poppin-navy mb-6">
-            <span className="w-2 h-2 rounded-full bg-poppin-lilac animate-pulse" />
-            <span>Modern Community & Real-Time Social Platform</span>
-          </div>
-
-          {/* Clean Wordmark */}
-          <div className="flex justify-center mb-4">
-            <div className="relative h-14 w-44 sm:h-16 sm:w-52">
-              <Image
-                src="/brand/poppin-logo.png"
-                alt="Poppin."
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </div>
-
-          <h1 className="hero-title text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 max-w-3xl mx-auto leading-[1.15]">
-            Where ideas connect and communities{" "}
-            <span className="text-poppin-lilac underline decoration-poppin-lilac/30 decoration-wavy underline-offset-4">
-              thrive.
-            </span>
-          </h1>
-
-          <p className="hero-desc mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            A fast, modern social network built for discussions that matter. Explore Reddit-style communities, real-time chats, and creator showcases.
-          </p>
-
-          {/* Prominent Search Bar on Landing Page Before Login */}
-          <div className="hero-search-box mt-8 max-w-2xl mx-auto">
-            <form
-              onSubmit={handleHeroSearch}
-              className="relative flex items-center p-1.5 rounded-2xl bg-slate-50 border border-slate-300 shadow-sm focus-within:border-poppin-lilac focus-within:ring-2 focus-within:ring-poppin-lilac/20 transition-all"
-            >
-              <div className="pl-3 text-slate-400 flex items-center pointer-events-none">
-                <Search className="w-5 h-5 text-poppin-lilac" />
+        <div className="relative max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+            
+            {/* Left Column: Heading, Search & Actions */}
+            <div className="lg:col-span-7 flex flex-col items-start text-left">
+              {/* Status Badge */}
+              <div className="hero-badge inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-poppin-lilac-light border border-poppin-lilac-border text-xs font-bold text-poppin-lilac mb-6">
+                <span className="w-2 h-2 rounded-full bg-poppin-lilac animate-pulse" />
+                <span>Next-Generation Community Platform</span>
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search creators, communities (r/design-craft), topics (#ai)..."
-                className="w-full pl-3 pr-3 py-2 bg-transparent text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-poppin-navy hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shrink-0"
-              >
-                <span>Search</span>
-                <ArrowRight className="w-4 h-4 text-poppin-lilac" />
-              </button>
-            </form>
 
-            {/* Quick Topic Jump Chips */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs">
-              <span className="text-slate-400 font-semibold">Try searching:</span>
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium"
-              >
-                r/design-craft
-              </button>
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium"
-              >
-                r/distributed-systems
-              </button>
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium"
-              >
-                @alex_design
-              </button>
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium"
-              >
-                #nextjs
-              </button>
-            </div>
-          </div>
+              <h1 className="hero-title text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12]">
+                Where creators gather, debate, and{" "}
+                <span className="text-poppin-lilac">
+                  ship.
+                </span>
+              </h1>
 
-          {/* Action Hub */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            {user ? (
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href="/feed"
-                  className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-bold text-sm shadow-sm transition-all"
+              <p className="hero-desc mt-5 text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl">
+                Reddit-style communities, sub-50ms real-time messaging with live typing, and native media drops. Built for designers, engineers, and builders.
+              </p>
+
+              {/* Prominent Search Bar on Landing Page Before Login */}
+              <div className="hero-search-box mt-7 w-full max-w-xl">
+                <form
+                  onSubmit={handleHeroSearch}
+                  className="relative flex items-center p-1.5 rounded-2xl bg-slate-50 border border-slate-300 shadow-2xs focus-within:border-poppin-lilac focus-within:ring-2 focus-within:ring-poppin-lilac/20 transition-all"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Go to Feed</span>
-                </Link>
-                <Link
-                  href="/communities"
-                  className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-xs transition-all"
-                >
-                  <Layers className="w-4 h-4 text-poppin-lilac" />
-                  <span>Browse Communities</span>
-                </Link>
+                  <div className="pl-3 text-slate-400 flex items-center pointer-events-none">
+                    <Search className="w-5 h-5 text-poppin-lilac" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search creators, communities (r/design-craft), topics (#ai)..."
+                    className="w-full pl-3 pr-3 py-2 bg-transparent text-sm sm:text-base font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all shrink-0 active:scale-95"
+                  >
+                    <span>Search</span>
+                    <ArrowRight className="w-4 h-4 text-poppin-lilac" />
+                  </button>
+                </form>
+
+                {/* Quick Topic Jump Chips */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="text-slate-400 font-semibold">Try:</span>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium active:scale-95"
+                  >
+                    r/design-craft
+                  </button>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium active:scale-95"
+                  >
+                    r/distributed-systems
+                  </button>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium active:scale-95"
+                  >
+                    @alex_design
+                  </button>
+                  <button
+                    onClick={() => setIsSearchOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-poppin-lilac-light hover:text-poppin-lilac text-slate-600 border border-slate-200 transition font-medium active:scale-95"
+                  >
+                    #nextjs
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <Link
-                  href="/register"
-                  className="min-h-[46px] inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-extrabold text-sm shadow-sm transition-all"
-                >
-                  <span>Join the Community</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="min-h-[46px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-xs transition-all"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/communities"
-                  className="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl text-slate-600 hover:text-poppin-lilac font-semibold text-sm transition-all"
-                >
-                  <span>Explore without an account</span>
-                  <ArrowUpRight className="w-4 h-4" />
-                </Link>
-              </div>
-            )}
-          </div>
 
-          {/* Interactive Handle Probe Widget (Clean & Integrated) */}
-          <div className="mt-10 max-w-md mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 text-left">
-            <div className="flex items-center justify-between mb-2">
-              <label
-                htmlFor="handle-probe-input"
-                className="text-xs font-bold uppercase tracking-wider text-slate-500"
-              >
-                Claim your unique handle
-              </label>
-              <span className="text-[11px] text-slate-400">Instant reservation</span>
-            </div>
-            <div className="relative flex items-center">
-              <span className="absolute left-3.5 text-slate-400 font-bold select-none text-sm">@</span>
-              <input
-                id="handle-probe-input"
-                type="text"
-                value={handleQuery}
-                onChange={(e) => setHandleQuery(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                placeholder="choose_handle"
-                maxLength={30}
-                className="w-full pl-8 pr-10 py-2 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-poppin-lilac focus:border-poppin-lilac transition-all"
-              />
-              <div className="absolute right-3 flex items-center pointer-events-none">
-                {probeResult.loading ? (
-                  <Loader2 className="w-4 h-4 text-poppin-lilac animate-spin" />
-                ) : probeResult.isAvailable ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              {/* Action Hub */}
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                {user ? (
+                  <>
+                    <Link
+                      href="/feed"
+                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-bold text-sm shadow-xs transition-all active:scale-[0.98]"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Go to Feed</span>
+                    </Link>
+                    <Link
+                      href="/communities"
+                      className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-all active:scale-[0.98]"
+                    >
+                      <Layers className="w-4 h-4 text-poppin-lilac" />
+                      <span>Browse Communities</span>
+                    </Link>
+                  </>
                 ) : (
-                  <XCircle className="w-5 h-5 text-rose-500" />
+                  <>
+                    <Link
+                      href="/register"
+                      className="min-h-[46px] inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-extrabold text-sm shadow-xs transition-all active:scale-[0.98]"
+                    >
+                      <span>Join the Community</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="min-h-[46px] inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-sm shadow-2xs transition-all active:scale-[0.98]"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/communities"
+                      className="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-slate-600 hover:text-poppin-lilac font-semibold text-sm transition-all"
+                    >
+                      <span>Explore without account</span>
+                      <ArrowUpRight className="w-4 h-4" />
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs">
-              <span
-                className={`font-semibold ${
-                  probeResult.isAvailable ? "text-emerald-700" : "text-slate-500"
-                }`}
-              >
-                {probeResult.loading
-                  ? "Checking availability..."
-                  : probeResult.reason || "Available! 3-30 characters"}
-              </span>
-              <Link
-                href={`/register?username=${encodeURIComponent(handleQuery)}`}
-                className="text-poppin-lilac font-bold hover:underline inline-flex items-center gap-0.5"
-              >
-                Claim &rarr;
-              </Link>
+
+            {/* Right Column: Live Product Artifact & Handle Claim */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              {/* Reddit-Style Live Preview Card */}
+              <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-slate-900">r/design-craft</span>
+                    <span className="text-slate-400">&bull;</span>
+                    <span className="text-slate-500">Posted by u/alex_design</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-semibold">
+                    Showcase
+                  </span>
+                </div>
+
+                <div className="mt-3.5 flex gap-3.5">
+                  {/* Upvote column */}
+                  <div className="flex flex-col items-center bg-slate-50 px-2 py-1.5 rounded-xl border border-slate-100 shrink-0 select-none">
+                    <span className="text-poppin-lilac font-bold text-xs">▲</span>
+                    <span className="text-xs font-bold text-slate-800 my-0.5">142</span>
+                    <span className="text-slate-400 text-xs">▼</span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 leading-snug">
+                      Fluid typography scaling and tactile micro-interactions: Our design token architecture
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                      Eliminated layout shifts and kept our CSS payload strictly under 12kb. Live WebSockets fanout verified.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Real-time typing badge preview */}
+                <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 text-[11px] text-slate-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-poppin-lilac animate-ping" />
+                    <span className="font-medium">Sarah Chen is typing...</span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    <span>38 comments</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Interactive Handle Probe Widget */}
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 text-left shadow-2xs">
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="handle-probe-input"
+                    className="text-xs font-bold text-slate-700 uppercase tracking-wider"
+                  >
+                    Claim your unique handle
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">Instant reservation</span>
+                </div>
+                <div className="relative flex items-center">
+                  <span className="absolute left-3.5 text-slate-400 font-bold select-none text-sm">@</span>
+                  <input
+                    id="handle-probe-input"
+                    type="text"
+                    value={handleQuery}
+                    onChange={(e) => setHandleQuery(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    placeholder="choose_handle"
+                    maxLength={30}
+                    className="w-full pl-8 pr-10 py-2 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-poppin-lilac focus:border-poppin-lilac transition-all"
+                  />
+                  <div className="absolute right-3 flex items-center pointer-events-none">
+                    {probeResult.loading ? (
+                      <Loader2 className="w-4 h-4 text-poppin-lilac animate-spin" />
+                    ) : probeResult.isAvailable ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-rose-500" />
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs">
+                  <span
+                    className={`font-semibold ${
+                      probeResult.isAvailable ? "text-emerald-700" : "text-slate-500"
+                    }`}
+                  >
+                    {probeResult.loading
+                      ? "Checking availability..."
+                      : probeResult.reason || "Available! 3-30 characters"}
+                  </span>
+                  <Link
+                    href={`/register?username=${encodeURIComponent(handleQuery)}`}
+                    className="text-poppin-lilac font-bold hover:underline inline-flex items-center gap-0.5 active:scale-95"
+                  >
+                    Claim &rarr;
+                  </Link>
+                </div>
+              </div>
+
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Trending Communities Spotlight (Reddit Style) */}
-      <section className="py-12 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      {/* Screen 2: Trending Subreddit Communities with Equal Edges */}
+      <section className="py-16 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-poppin-lilac uppercase tracking-wider mb-1">
               <Flame className="w-4 h-4" />
               <span>Trending Communities</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Popular Spaces to Join Right Now
             </h2>
           </div>
           <Link
             href="/communities"
-            className="inline-flex items-center gap-1 text-sm font-bold text-poppin-lilac hover:text-poppin-lilac-hover hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-bold text-poppin-lilac hover:underline"
           >
             <span>View all communities</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {trendingHubs.map((hub) => (
             <Link
               key={hub.slug}
               href={`/communities/${hub.slug}`}
-              className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-poppin-lilac/50 hover:shadow-md transition-all flex flex-col justify-between"
+              className="group bg-white p-5 rounded-2xl border border-slate-200/90 hover:border-poppin-lilac/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <img
-                    src={hub.avatar}
-                    alt={hub.name}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
-                  />
+                <div className="flex items-center gap-3.5 mb-3.5">
+                  <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                    <img
+                      src={hub.avatar}
+                      alt={hub.name}
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                    />
+                  </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 group-hover:text-poppin-lilac transition">
                       {hub.name}
@@ -410,7 +455,7 @@ export default function HomePage() {
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{hub.desc}</p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
+              <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
                 <span className="flex items-center gap-1 text-slate-400">
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>{hub.postsCount} active posts</span>
@@ -424,46 +469,46 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* What Makes Poppin Different (Crisp, High-Craft Features) */}
-      <section className="py-12 bg-white border-t border-b border-slate-200">
+      {/* Screen 3: Authentic Architecture & Collaboration */}
+      <section className="py-16 bg-white border-t border-b border-slate-200/90">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-xl mx-auto mb-10">
-            <h2 className="text-xs uppercase tracking-widest font-black text-poppin-lilac">
-              Core Capabilities
+          <div className="max-w-xl mb-10">
+            <h2 className="text-xs uppercase tracking-widest font-black text-poppin-lilac mb-1">
+              Core Architecture
             </h2>
-            <p className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Engineered for Real Collaboration
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
               <div className="w-10 h-10 rounded-xl bg-poppin-lilac-light text-poppin-lilac flex items-center justify-center mb-4">
                 <Zap className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-slate-900">Real-Time Messaging</h3>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Persistent 1-on-1 and group chats with live WebSockets, instantaneous typing indicators, and unread counts.
+              <h3 className="text-base font-bold text-slate-900">Real-Time WebSockets</h3>
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Dedicated WebSocket server with room broadcasting, instant typing indicators, and reliable message fanout.
               </p>
             </div>
 
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
                 <Layers className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Reddit-Style Communities</h3>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Organized hubs with upvoting, hot/new sorting, post flairs, moderator controls, and structured threaded discussions.
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Structured subreddits with score counters, upvote/downvote hierarchy, post flairs, and moderator controls.
               </p>
             </div>
 
-            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200">
+            <div className="feature-row bg-slate-50/70 p-6 rounded-2xl border border-slate-200/80 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200">
               <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
                 <Globe2 className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-slate-900">Native Media Uploads</h3>
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Drag-and-drop file uploads backed by S3 storage adapters. No need to paste image links manually.
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Drag-and-drop file upload engine backed by S3 storage adapters. No URL copy-pasting required.
               </p>
             </div>
           </div>
@@ -471,20 +516,20 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer role="contentinfo" className="border-t border-slate-200 bg-white py-6 mt-auto">
+      <footer role="contentinfo" className="border-t border-slate-200 bg-white py-8 mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900">Poppin.</span>
             <span>&copy; {new Date().getFullYear()} Modern Community Platform.</span>
           </div>
-          <div className="flex items-center gap-4 font-medium">
-            <Link href="/communities" className="hover:text-poppin-lilac">
+          <div className="flex items-center gap-5 font-medium">
+            <Link href="/communities" className="hover:text-poppin-lilac transition">
               Communities
             </Link>
-            <Link href="/explore" className="hover:text-poppin-lilac">
+            <Link href="/explore" className="hover:text-poppin-lilac transition">
               Explore
             </Link>
-            <Link href="/register" className="hover:text-poppin-lilac">
+            <Link href="/register" className="hover:text-poppin-lilac transition">
               Get Started
             </Link>
           </div>

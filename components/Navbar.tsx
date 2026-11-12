@@ -53,7 +53,7 @@ export function Navbar() {
         role="banner"
         className="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-40 transition-shadow"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand Logo & Status */}
           <div className="flex items-center gap-3 shrink-0">
             <Link

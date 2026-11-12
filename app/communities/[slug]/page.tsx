@@ -207,7 +207,7 @@ export default function CommunityDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#DAE0E6] flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-light)] flex flex-col">
       {/* Top Banner */}
       <div className="w-full h-36 sm:h-48 md:h-56 relative bg-slate-800">
         <img

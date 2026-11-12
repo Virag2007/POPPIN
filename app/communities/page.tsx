@@ -105,7 +105,7 @@ export default function CommunitiesPage() {
   };
 
   return (
-    <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-[#F4F6F8]">
+    <div className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-[var(--bg-subtle)]">
       {/* Reddit-Style Subreddit Header Banner */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 mb-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>

@@ -10,6 +10,9 @@
   --text-secondary: #64748B;
   --border-subtle: #E2E8F0;
   --focus-ring: #2563EB;
+  --bg-subtle: #F4F6F8;
+  --bg-light: #DAE0E6;
+  --text-dark: #1C1C1C;
 }
 
 @tailwind base;

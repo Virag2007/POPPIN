@@ -165,7 +165,7 @@ export default function HomePage() {
   ];
 
   return (
-    <main id="main-content" ref={heroRef} className="flex-1 flex flex-col bg-[#F8FAFC]">
+    <main id="main-content" ref={heroRef} className="flex-1 flex flex-col bg-[var(--surface-ground)]">
       {/* Search Modal Accessible Globally & From Hero */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
@@ -180,7 +180,7 @@ export default function HomePage() {
           }}
         />
 
-        <div className="relative max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+        <div className="relative max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
             {/* Left Column: Heading, Search & Actions */}

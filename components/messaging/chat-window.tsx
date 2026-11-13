@@ -38,10 +38,20 @@ export function ChatWindow({
 
   // Find partner for 1-on-1 direct conversation
   const otherMember = conversation.members.find((m) => m.userId !== currentUserId);
-  const displayName = otherMember?.user.displayName || otherMember?.user.username || "Direct Message";
-  const username = otherMember?.user.username || "user";
-  const avatar = otherMember?.user.avatar;
+  const rawDisplay = otherMember?.user.displayName?.trim();
+  const rawUser = otherMember?.user.username?.trim();
+  const displayName = conversation.isGroup
+    ? conversation.name || "Group Chat"
+    : rawDisplay || rawUser || "Direct Message";
+  const username = rawUser || null;
+  const avatar = conversation.isGroup ? conversation.avatar : otherMember?.user.avatar;
   const isPartnerOnline = otherMember ? isUserOnline(otherMember.userId) : false;
+  const showUsername = Boolean(
+    username &&
+      displayName &&
+      displayName.toLowerCase() !== username.toLowerCase() &&
+      !displayName.toLowerCase().startsWith(`@${username.toLowerCase()}`)
+  );
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#313338] text-[#F2F3F5]">
@@ -69,7 +79,9 @@ export function ChatWindow({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-white font-heading">{displayName}</h2>
-              <span className="text-xs text-zinc-400 font-mono">@{username}</span>
+              {showUsername && (
+                <span className="text-xs text-zinc-400 font-mono">@{username}</span>
+              )}
             </div>
             <p className="text-[11px] text-[#B5BAC1] font-medium font-sans">
               {isPartnerOnline ? "Active now" : "Offline"}

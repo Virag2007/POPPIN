@@ -3,6 +3,7 @@
 import React from "react";
 import { ConversationResponse } from "@/types";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { useAuth } from "@/context/AuthContext";
 
 interface ConversationItemProps {
   conversation: ConversationResponse;
@@ -13,23 +14,30 @@ interface ConversationItemProps {
 
 export function ConversationItem({
   conversation,
-  currentUserId,
+  currentUserId: propUserId,
   isActive = false,
   isOnline = false,
 }: ConversationItemProps) {
+  const { user } = useAuth();
+  const currentUserId = propUserId || user?.id;
+
   let displayName = conversation.name;
   let username: string | null = null;
   let avatar = conversation.avatar;
   let isDeleted = false;
 
   if (!conversation.isGroup) {
+    // Reliably resolve the OTHER participant, never falling back to current user
     const otherMember = currentUserId
       ? conversation.members.find((m) => m.userId !== currentUserId)
-      : conversation.members[0];
+      : conversation.members.find((m) => m.userId !== user?.id) || conversation.members[0];
 
     if (otherMember?.user) {
-      displayName = otherMember.user.displayName || otherMember.user.username || "Member";
-      username = otherMember.user.username ?? null;
+      const rawDisplay = otherMember.user.displayName?.trim();
+      const rawUser = otherMember.user.username?.trim();
+
+      displayName = rawDisplay || rawUser || "Member";
+      username = rawUser ?? null;
       avatar = otherMember.user.avatar ?? null;
     } else {
       displayName = "Deleted Account";
@@ -42,6 +50,14 @@ export function ConversationItem({
   if (!displayName) {
     displayName = conversation.isGroup ? "Group Chat" : "Direct Message";
   }
+
+  // Prevent name from appearing twice if displayName and username are identical
+  const showUsername = Boolean(
+    username &&
+      displayName &&
+      displayName.toLowerCase() !== username.toLowerCase() &&
+      !displayName.toLowerCase().startsWith(`@${username.toLowerCase()}`)
+  );
 
   const lastMessageSnippet = conversation.lastMessage
     ? conversation.lastMessage.content
@@ -83,7 +99,7 @@ export function ConversationItem({
             <h4 className="text-xs font-heading font-bold text-white truncate">
               {displayName}
             </h4>
-            {username && (
+            {showUsername && (
               <span className="text-[10px] text-[#B5BAC1] font-mono truncate">
                 @{username}
               </span>

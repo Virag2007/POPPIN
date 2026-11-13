@@ -87,6 +87,11 @@ function MessagesContent() {
       const data = await res.json();
       if (res.ok && data.success && Array.isArray(data.data)) {
         setConversations(data.data);
+        setSelectedConversation((prev) => {
+          if (!prev) return null;
+          const fresh = data.data.find((c: ConversationResponse) => c.id === prev.id);
+          return fresh || prev;
+        });
       }
     } catch {
       // Background silent refresh
@@ -104,12 +109,33 @@ function MessagesContent() {
     };
   }, [token, refreshConversations]);
 
-  const filteredConversations = conversations.filter((c) => {
-    const q = searchQuery.toLowerCase();
-    const otherMember = c.members.find((m) => m.userId !== user?.id);
-    const name = otherMember?.user.displayName || otherMember?.user.username || c.name || "";
-    return name.toLowerCase().includes(q);
-  });
+  // Deduplicate and filter conversations
+  const filteredConversations = React.useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const seenIds = new Set<string>();
+    const seenPartnerIds = new Set<string>();
+    const result: ConversationResponse[] = [];
+
+    for (const conv of conversations) {
+      if (seenIds.has(conv.id)) continue;
+      seenIds.add(conv.id);
+
+      const otherMember = conv.members.find((m) => m.userId !== user?.id);
+
+      // For direct conversations, prevent duplicate entries with the same person
+      if (!conv.isGroup && otherMember) {
+        if (seenPartnerIds.has(otherMember.userId)) continue;
+        seenPartnerIds.add(otherMember.userId);
+      }
+
+      const name = otherMember?.user.displayName || otherMember?.user.username || conv.name || "";
+      if (!q || name.toLowerCase().includes(q)) {
+        result.push(conv);
+      }
+    }
+
+    return result;
+  }, [conversations, searchQuery, user?.id]);
 
   return (
     <main className="min-h-screen py-6 px-4 sm:px-6 text-[#F2F3F5]">
@@ -177,6 +203,7 @@ function MessagesContent() {
                   >
                     <ConversationItem
                       conversation={conv}
+                      currentUserId={user?.id}
                       isActive={selectedConversation?.id === conv.id}
                     />
                   </div>

@@ -15,6 +15,7 @@ export class MessagingRepository {
       },
       include: {
         members: {
+          orderBy: { createdAt: "asc" },
           include: {
             user: {
               select: {
@@ -89,6 +90,7 @@ export class MessagingRepository {
       orderBy: { updatedAt: "desc" },
       include: {
         members: {
+          orderBy: { createdAt: "asc" },
           include: {
             user: {
               select: {
@@ -154,6 +156,7 @@ export class MessagingRepository {
       where: { id: conversationId },
       include: {
         members: {
+          orderBy: { createdAt: "asc" },
           include: {
             user: {
               select: {
@@ -413,6 +416,7 @@ export class MessagingRepository {
       },
       include: {
         members: {
+          orderBy: { createdAt: "asc" },
           include: {
             user: {
               select: {

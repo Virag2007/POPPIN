@@ -1,9 +1,11 @@
 import React from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { PostService } from "@/services/post.service";
 import { PostDetail } from "@/components/posts/post-detail";
 import { AppError } from "@/lib/http/response";
+import { verifyToken } from "@/lib/auth/jwt";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 
 interface PostPageProps {
@@ -14,7 +16,9 @@ export default async function PostPage({ params }: PostPageProps) {
   const { postId } = await params;
 
   try {
-    const post = await PostService.getPost(postId);
+    const token = (await cookies()).get("poppin_token")?.value;
+    const viewerId = token ? verifyToken(token)?.userId : undefined;
+    const post = await PostService.getPost(postId, viewerId);
 
     return (
       <main className="min-h-screen bg-[#FCFBF9] text-[#18181B] py-8">

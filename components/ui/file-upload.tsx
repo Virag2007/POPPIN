@@ -19,6 +19,7 @@ interface FileUploadProps {
   maxSizeBytes?: number; // default 10MB
   accept?: string;
   className?: string;
+  token?: string | null;
 }
 
 export function FileUpload({
@@ -29,6 +30,7 @@ export function FileUpload({
   maxSizeBytes = 10 * 1024 * 1024,
   accept = "image/png,image/jpeg,image/webp,image/gif",
   className = "",
+  token,
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -55,8 +57,12 @@ export function FileUpload({
       const formData = new FormData();
       formData.append("file", file);
 
+      const headers: Record<string, string> = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
       const res = await fetch("/api/v1/media/upload", {
         method: "POST",
+        headers,
         body: formData,
       });
 

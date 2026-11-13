@@ -4,7 +4,7 @@
 import React from "react";
 import { ConversationResponse } from "@/types";
 import { OnlineIndicator } from "./OnlineIndicator";
-import { Users } from "lucide-react";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 interface ConversationListProps {
   conversations: ConversationResponse[];
@@ -50,23 +50,19 @@ export function ConversationList({
             key={conv.id}
             type="button"
             onClick={() => onSelect(conv)}
-            className={`w-full text-left p-3.5 flex items-start gap-3 transition-colors ${
+            className={`w-full text-left p-3 rounded-xl flex items-start gap-3 transition-colors ${
               isSelected
-                ? "bg-poppin-lilac-light/70 border-l-4 border-poppin-lilac"
-                : "hover:bg-slate-50 border-l-4 border-transparent"
+                ? "bg-[#383A40] text-white"
+                : "text-[#B5BAC1] hover:bg-[#2B2D31] hover:text-white"
             }`}
           >
             {/* Avatar with Online Badge */}
             <div className="relative shrink-0">
-              <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-200 border border-slate-200">
-                {avatar ? (
-                  <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center font-bold text-xs text-slate-500 bg-slate-100">
-                    {conv.isGroup ? <Users className="w-5 h-5 text-slate-400" /> : displayName[0]?.toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <AvatarImage
+                src={avatar}
+                alt={displayName}
+                size="md"
+              />
               {!conv.isGroup && (
                 <div className="absolute -bottom-0.5 -right-0.5">
                   <OnlineIndicator isOnline={isPartnerOnline} size="sm" />

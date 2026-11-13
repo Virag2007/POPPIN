@@ -1,7 +1,7 @@
 import { OnboardingRepository } from "@/repositories/onboarding.repository";
 import { ProfileRepository } from "@/repositories/profile.repository";
 import { AppError } from "@/lib/http/response";
-import { OnboardingStep1Input, OnboardingStep2Input } from "@/lib/validation/onboarding";
+import { OnboardingStep1Input, OnboardingStep2Input, OnboardingImagesInput } from "@/lib/validation/onboarding";
 
 function parseJsonArray<T>(raw: string | null | undefined): T[] {
   if (!raw) return [];
@@ -16,15 +16,21 @@ function parseJsonArray<T>(raw: string | null | undefined): T[] {
 export class OnboardingService {
   static async getOnboardingStatus(userId: string) {
     const record = await OnboardingRepository.findByUserId(userId);
+    const profile = await ProfileRepository.findByUserId(userId);
 
     if (!record) {
       return {
         isCompleted: false,
         step: 1,
         role: null,
-        headline: null,
-        skills: [],
-        interests: [],
+        headline: profile?.headline || null,
+        displayName: profile?.displayName || null,
+        username: profile?.username || null,
+        bio: profile?.bio || null,
+        avatar: profile?.avatar || null,
+        coverImage: profile?.coverImage || null,
+        skills: parseJsonArray<string>(profile?.skills),
+        interests: parseJsonArray<string>(profile?.interests),
       };
     }
 
@@ -34,20 +40,30 @@ export class OnboardingService {
       isCompleted: record.isCompleted,
       step: record.step,
       role: record.role || null,
-      headline: record.headline || null,
-      skills: parseJsonArray<string>(record.skills),
-      interests: parseJsonArray<string>(record.interests),
+      headline: record.headline || profile?.headline || null,
+      displayName: profile?.displayName || null,
+      username: profile?.username || null,
+      bio: profile?.bio || null,
+      avatar: profile?.avatar || null,
+      coverImage: profile?.coverImage || null,
+      skills: parseJsonArray<string>(record.skills || profile?.skills),
+      interests: parseJsonArray<string>(record.interests || profile?.interests),
       updatedAt: record.updatedAt,
     };
   }
 
   static async saveStep1(userId: string, input: OnboardingStep1Input) {
-    const saved = await OnboardingRepository.saveStep1(userId, input);
+    const role = input.role || input.headline;
+    const saved = await OnboardingRepository.saveStep1(userId, { role, headline: input.headline });
 
-    // Keep profile headline in sync if profile already exists
+    // Keep profile fields in sync
     const profile = await ProfileRepository.findByUserId(userId);
     if (profile) {
-      await ProfileRepository.update(userId, { headline: input.headline });
+      await ProfileRepository.update(userId, {
+        ...(input.displayName ? { displayName: input.displayName } : {}),
+        headline: input.headline,
+        ...(input.bio ? { bio: input.bio } : {}),
+      });
     }
 
     return {
@@ -60,13 +76,24 @@ export class OnboardingService {
     };
   }
 
+  static async saveImages(userId: string, input: OnboardingImagesInput) {
+    const profile = await ProfileRepository.findByUserId(userId);
+    if (profile) {
+      await ProfileRepository.update(userId, {
+        avatar: input.avatar,
+        coverImage: input.coverImage,
+      });
+    }
+    return { success: true };
+  }
+
   static async saveStep2(userId: string, input: OnboardingStep2Input) {
     const saved = await OnboardingRepository.saveStep2(userId, input);
 
     // Keep profile skills and interests in sync if profile already exists
     const profile = await ProfileRepository.findByUserId(userId);
     if (profile) {
-      await ProfileRepository.updateSkills(userId, input.skills);
+      await ProfileRepository.updateSkills(userId, input.skills || []);
       await ProfileRepository.updateInterests(userId, input.interests);
     }
 
@@ -85,28 +112,20 @@ export class OnboardingService {
   }
 
   static async completeOnboarding(userId: string) {
-    const record = await OnboardingRepository.findByUserId(userId);
-
-    if (!record || !record.role || !record.headline) {
-      throw new AppError("Step 1 (role and headline) must be completed before finishing onboarding", 400, "INCOMPLETE_STEP_1");
-    }
-
-    const skills = parseJsonArray<string>(record.skills);
-    const interests = parseJsonArray<string>(record.interests);
-
-    if (skills.length === 0 || interests.length === 0) {
-      throw new AppError("Step 2 (skills and interests) must be completed before finishing onboarding", 400, "INCOMPLETE_STEP_2");
+    const onboarding = await OnboardingRepository.findByUserId(userId);
+    if (!onboarding || onboarding.step < 3) {
+      throw new AppError(
+        "Cannot complete onboarding before completing prior steps",
+        400,
+        "ONBOARDING_INCOMPLETE"
+      );
     }
 
     const completed = await OnboardingRepository.markComplete(userId);
 
     return {
       isCompleted: true,
-      step: 3,
-      role: completed.role,
-      headline: completed.headline,
-      skills,
-      interests,
+      step: completed.step,
       message: "Onboarding completed successfully",
     };
   }

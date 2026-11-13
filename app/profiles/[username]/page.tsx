@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { SafeProfile, PostResponse } from "@/types";
 import { PostCard } from "@/components/posts/post-card";
 import { FollowersFollowingModal } from "@/components/profile/followers-following-modal";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import {
   MapPin,
   Briefcase,
@@ -285,17 +286,12 @@ export default function PublicProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20 mb-6">
             {/* Avatar */}
             <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#2B2D31] p-1.5 shadow-xl border-2 border-white/10 shrink-0">
-              <div className="w-full h-full rounded-full bg-[#383A40] text-white font-bold flex items-center justify-center text-3xl sm:text-4xl overflow-hidden font-heading">
-                {profile.avatar ? (
-                  <img
-                    src={profile.avatar}
-                    alt={profile.displayName || "Avatar"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  profile.username.slice(0, 2).toUpperCase()
-                )}
-              </div>
+              <AvatarImage
+                src={profile.avatar}
+                alt={profile.displayName || profile.username || "Avatar"}
+                size="2xl"
+                className="w-full h-full text-3xl sm:text-4xl"
+              />
             </div>
 
             {/* Action Buttons */}

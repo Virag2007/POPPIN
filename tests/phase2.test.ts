@@ -228,7 +228,7 @@ export async function runPhase2Tests() {
 
   // 13. Retrieve Public Profile by Username
   console.log("13. Testing GET /api/v1/profiles/[username]...");
-  const pubReq = createJsonRequest("/api/v1/profiles/alice_dev", "GET");
+  const pubReq = createJsonRequest("/api/v1/profiles/alice_dev", "GET", undefined, aliceToken);
   const pubRes = await getPublicProfileHandler(pubReq, {
     params: Promise.resolve({ username: "alice_dev" }),
   });
@@ -241,7 +241,7 @@ export async function runPhase2Tests() {
 
   // 14. Retrieve Non-Existent Public Profile
   console.log("14. Testing non-existent public profile returns 404...");
-  const notFoundReq = createJsonRequest("/api/v1/profiles/non_existent_user_999", "GET");
+  const notFoundReq = createJsonRequest("/api/v1/profiles/non_existent_user_999", "GET", undefined, aliceToken);
   const notFoundRes = await getPublicProfileHandler(notFoundReq, {
     params: Promise.resolve({ username: "non_existent_user_999" }),
   });

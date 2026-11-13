@@ -15,12 +15,20 @@ function MessagesContent() {
   const [conversations, setConversations] = useState<ConversationResponse[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const loadConversations = useCallback(async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const res = await fetch("/api/v1/conversations");
+      setErrorMsg(null);
+      const res = await fetch("/api/v1/conversations", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (res.ok && data.success && Array.isArray(data.data)) {
         setConversations(data.data);
@@ -37,7 +45,10 @@ function MessagesContent() {
             try {
               const initRes = await fetch("/api/v1/conversations", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({ recipientId: targetUserId }),
               });
               const initData = await initRes.json();
@@ -46,19 +57,21 @@ function MessagesContent() {
                 setSelectedConversation(initData.data);
               }
             } catch {
-              // Ignore
+              // Ignore creation error
             }
           }
-        } else if (data.data.length > 0 && !selectedConversation) {
-          setSelectedConversation(data.data[0]);
+        } else if (data.data.length > 0) {
+          setSelectedConversation((prev) => prev || data.data[0]);
         }
+      } else {
+        setErrorMsg(data.error?.message || "Could not load conversations");
       }
-    } catch {
-      // Ignore
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Failed to load conversations");
     } finally {
       setIsLoading(false);
     }
-  }, [targetUserId, selectedConversation]);
+  }, [token, targetUserId]);
 
   useEffect(() => {
     loadConversations();
@@ -112,6 +125,17 @@ function MessagesContent() {
                 <div className="py-20 text-center text-xs text-zinc-500">
                   <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#5865F2]" />
                   <span>Loading conversations...</span>
+                </div>
+              ) : errorMsg ? (
+                <div className="py-16 px-4 text-center text-xs">
+                  <p className="text-rose-400 mb-3">{errorMsg}</p>
+                  <button
+                    type="button"
+                    onClick={loadConversations}
+                    className="px-4 py-1.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold transition cursor-pointer"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="py-20 px-4 text-center text-xs text-[#B5BAC1] font-sans">

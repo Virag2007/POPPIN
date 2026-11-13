@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { MessageResponseDTO } from "@/lib/socket/events";
 import { ReadReceipt } from "./ReadReceipt";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 interface MessageBubbleProps {
   message: MessageResponseDTO;
@@ -25,19 +26,11 @@ export function MessageBubble({ message, isSelf, showAvatar = true }: MessageBub
     <div className={`flex items-end gap-2 my-1 ${isSelf ? "justify-end" : "justify-start"}`}>
       {/* Sender Avatar for incoming messages */}
       {!isSelf && showAvatar && (
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 shrink-0 border border-slate-300">
-          {message.sender.profile?.avatar ? (
-            <img
-              src={message.sender.profile.avatar}
-              alt={message.sender.profile.username || "Sender"}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center font-bold text-xs text-slate-500 bg-slate-100">
-              {(message.sender.profile?.username || "U")[0].toUpperCase()}
-            </div>
-          )}
-        </div>
+        <AvatarImage
+          src={message.sender.profile?.avatar}
+          alt={message.sender.profile?.username || "Sender"}
+          size="sm"
+        />
       )}
 
       {!isSelf && !showAvatar && <div className="w-8 shrink-0" />}

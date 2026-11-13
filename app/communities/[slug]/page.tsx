@@ -5,6 +5,7 @@ import React, { useState, use } from "react";
 import Link from "next/link";
 import { Community, FeedPost } from "@/types";
 import { PostComposer, PostCard } from "@/components/feed";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import {
   ArrowLeft,
   Users,
@@ -17,6 +18,7 @@ import {
   ExternalLink,
   Flame,
   Award,
+  Loader2,
 } from "lucide-react";
 
 interface CommunitySlugParams {
@@ -139,76 +141,36 @@ export default function CommunityDetailPage({
     };
   }, [resolvedParams.slug]);
 
-  // Show & Tell project showcase
-  const showcaseProjects = [
-    {
-      id: "sh_1",
-      title: "Hyperflow Micro-Animations",
-      creator: "@alex_design",
-      description:
-        "A physics-based gesture interaction library for spring dynamics in WebGL and React.",
-      image:
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80",
-      upvotes: 89,
-      tags: ["WebGL", "Motion", "UI"],
-    },
-    {
-      id: "sh_2",
-      title: "Zero-Latency Token Streaming",
-      creator: "@sarah_code",
-      description:
-        "High-throughput WebSocket proxy with dynamic backpressure buffer in Rust & Node.js.",
-      image:
-        "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80",
-      upvotes: 114,
-      tags: ["Rust", "WebSocket", "Perf"],
-    },
-    {
-      id: "sh_3",
-      title: "Agentic Canvas Workspace",
-      creator: "@marcus_ai",
-      description:
-        "Spatial infinite canvas where autonomous agents execute subroutines in parallel sandboxes.",
-      image:
-        "https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80",
-      upvotes: 142,
-      tags: ["Agents", "Canvas", "AI"],
-    },
-  ];
+  // Derive actual showcase projects dynamically from community posts
+  const showcaseProjects = communityPosts.filter((p) =>
+    Boolean(p.mediaUrl || p.tags?.some((t) => t.toLowerCase().includes("showcase") || t.toLowerCase().includes("project")))
+  );
 
-  // Community members
-  const [members, setMembers] = useState([
-    {
-      id: "mem_1",
-      username: "alex_design",
-      displayName: "Alex Rivera",
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
-      role: "Hub Founder & Moderator",
-      badge: "Founder",
-      isFollowing: false,
-    },
-    {
-      id: "mem_2",
-      username: "sarah_code",
-      displayName: "Sarah Chen",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
-      role: "Distributed Systems & Next.js Lead",
-      badge: "Moderator",
-      isFollowing: true,
-    },
-    {
-      id: "mem_3",
-      username: "marcus_ai",
-      displayName: "Marcus Vance",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
-      role: "Agentic Systems Researcher",
-      badge: "Core Member",
-      isFollowing: false,
-    },
-  ]);
+  // Derive unique community members from active discussion authors
+  const members = Array.from(
+    new Map(
+      communityPosts
+        .filter((p): p is FeedPost & { author: NonNullable<FeedPost["author"]> } => Boolean(p.author))
+        .map((p) => [p.author.id, p.author])
+    ).values()
+  );
+
+  const toggleFollowMember = (id: string) => {
+    setCommunityPosts((prev) =>
+      prev.map((p) => {
+        if (p.author?.id === id) {
+          return {
+            ...p,
+            author: {
+              ...p.author,
+              isFollowing: !p.author.isFollowing,
+            },
+          };
+        }
+        return p;
+      })
+    );
+  };
 
   const toggleJoin = async () => {
     const wasMember = community.isMember;
@@ -271,28 +233,22 @@ export default function CommunityDetailPage({
     }
   };
 
-  const toggleFollowMember = (id: string) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, isFollowing: !m.isFollowing } : m))
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-[#FCFBF9] pb-20">
+    <div className="min-h-screen bg-[#313338] text-[#F2F3F5] pb-20">
       {/* Community Banner */}
-      <div className="relative h-56 sm:h-72 w-full overflow-hidden bg-zinc-900">
+      <div className="relative h-56 sm:h-72 w-full overflow-hidden bg-[#1E1F22]">
         <img
           src={community.coverImage}
           alt={community.name}
-          className="w-full h-full object-cover opacity-75 transform scale-105"
+          className="w-full h-full object-cover opacity-60 transform scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#313338] via-[#1E1F22]/50 to-transparent" />
 
         {/* Back Link */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 relative z-10">
           <Link
             href="/communities"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-md text-white text-xs font-semibold hover:bg-white/30 transition shadow-xs border border-white/20"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1E1F22]/80 backdrop-blur-md text-white text-xs font-semibold hover:bg-[#383A40] transition shadow-xs border border-white/10"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to Communities
@@ -302,10 +258,10 @@ export default function CommunityDetailPage({
 
       {/* Community Header Card */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-20">
-        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xs border border-zinc-200">
+        <div className="bg-[#2B2D31] rounded-2xl p-6 sm:p-8 shadow-xl border border-white/10 text-white">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-white shadow-xs bg-zinc-100 shrink-0 border border-zinc-200">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-[#2B2D31] shadow-lg bg-[#383A40] shrink-0 border border-white/10">
                 <img
                   src={community.avatar}
                   alt={community.name}
@@ -315,22 +271,22 @@ export default function CommunityDetailPage({
 
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 border border-zinc-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#383A40] text-zinc-200 border border-white/10">
                     {community.category}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     Verified Hub
                   </span>
                 </div>
 
-                <h1 className="font-display text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
+                <h1 className="font-heading text-2xl sm:text-3xl font-black text-white tracking-tight">
                   {community.name}
                 </h1>
-                <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                <p className="text-xs text-[#8A9BFF] font-mono mt-0.5">
                   c/{community.slug}
                 </p>
-                <p className="text-zinc-600 text-sm mt-2 max-w-2xl leading-relaxed font-sans">
+                <p className="text-[#B5BAC1] text-sm mt-2 max-w-2xl leading-relaxed font-sans">
                   {community.tagline}
                 </p>
               </div>
@@ -340,16 +296,16 @@ export default function CommunityDetailPage({
             <div className="flex items-center gap-3 shrink-0 self-stretch sm:self-auto">
               <button
                 onClick={handleShareLink}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-200 text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition active:scale-95 shadow-xs"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-[#F2F3F5] text-sm font-medium hover:bg-[#383A40] transition active:scale-95 cursor-pointer"
               >
                 {copiedLink ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span className="text-emerald-700 font-medium">Link Copied!</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span className="text-emerald-400 font-medium">Link Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Share2 className="w-4 h-4 text-zinc-500" />
+                    <Share2 className="w-4 h-4 text-zinc-400" />
                     <span>Share</span>
                   </>
                 )}
@@ -357,15 +313,15 @@ export default function CommunityDetailPage({
 
               <button
                 onClick={toggleJoin}
-                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition active:scale-95 shadow-xs ${
+                className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition active:scale-95 cursor-pointer ${
                   community.isMember
-                    ? "bg-zinc-100 text-zinc-700 hover:bg-red-50 hover:text-red-600 border border-zinc-200"
-                    : "bg-zinc-900 text-white hover:bg-zinc-800"
+                    ? "bg-[#383A40] text-[#B5BAC1] hover:bg-rose-500/20 hover:text-rose-300 border border-white/10"
+                    : "bg-[#5865F2] hover:bg-[#4752C4] text-white shadow-lg shadow-[#5865F2]/25"
                 }`}
               >
                 {community.isMember ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <span>Joined Hub</span>
                   </>
                 ) : (
@@ -378,31 +334,22 @@ export default function CommunityDetailPage({
             </div>
           </div>
 
-          {/* Hub Stats Bar */}
-          <div className="mt-6 pt-6 border-t border-zinc-100 flex flex-wrap items-center gap-6 sm:gap-10 text-xs text-zinc-600">
+          {/* Hub Stats Bar - Bound strictly to real database counts */}
+          <div className="mt-6 pt-6 border-t border-white/10 flex flex-wrap items-center gap-6 sm:gap-10 text-xs text-[#B5BAC1]">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-zinc-700" />
+              <Users className="w-4 h-4 text-[#5865F2]" />
               <span>
-                <strong className="text-zinc-900 font-bold font-mono">
+                <strong className="text-white font-bold font-mono">
                   {community.membersCount.toLocaleString()}
                 </strong>{" "}
                 Members
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <MessageSquare className="w-4 h-4 text-[#8A9BFF]" />
               <span>
-                <strong className="text-zinc-900 font-bold font-mono">
-                  {Math.round(community.membersCount * 0.18)}
-                </strong>{" "}
-                Online now
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-zinc-400" />
-              <span>
-                <strong className="text-zinc-900 font-bold font-mono">
-                  {communityPosts.length + 42}
+                <strong className="text-white font-bold font-mono">
+                  {communityPosts.length}
                 </strong>{" "}
                 Discussions
               </span>
@@ -417,43 +364,43 @@ export default function CommunityDetailPage({
           {/* Main Content Area */}
           <div className="lg:col-span-8 space-y-6">
             {/* Tabs */}
-            <div className="flex items-center gap-2 border-b border-zinc-200 pb-2 overflow-x-auto">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
               <button
                 onClick={() => setActiveTab("discussions")}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "discussions"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[#5865F2] text-white shadow-xs"
+                    : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
                 Discussions
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-white/20 text-white font-mono">
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/20 text-white font-mono">
                   {communityPosts.length}
                 </span>
               </button>
 
               <button
                 onClick={() => setActiveTab("showcase")}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "showcase"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[#5865F2] text-white shadow-xs"
+                    : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
                 }`}
               >
                 <Award className="w-4 h-4" />
-                Show & Tell
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-zinc-100 text-zinc-700 font-mono">
+                Showcase Projects
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/20 text-white font-mono">
                   {showcaseProjects.length}
                 </span>
               </button>
 
               <button
                 onClick={() => setActiveTab("rules")}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "rules"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[#5865F2] text-white shadow-xs"
+                    : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -462,15 +409,15 @@ export default function CommunityDetailPage({
 
               <button
                 onClick={() => setActiveTab("members")}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   activeTab === "members"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                    ? "bg-[#5865F2] text-white shadow-xs"
+                    : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
                 }`}
               >
                 <Users className="w-4 h-4" />
-                Members
-                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-zinc-200 text-zinc-700 font-mono">
+                Contributors
+                <span className="px-1.5 py-0.5 rounded-full text-[11px] bg-black/20 text-white font-mono">
                   {members.length}
                 </span>
               </button>
@@ -480,9 +427,9 @@ export default function CommunityDetailPage({
             {activeTab === "discussions" && (
               <div className="space-y-6">
                 {/* Post Composer for Community */}
-                <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-xs">
-                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-zinc-500">
-                    <MessageSquare className="w-3.5 h-3.5 text-zinc-900" />
+                <div className="bg-[#2B2D31] rounded-2xl p-5 border border-white/10 shadow-lg">
+                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-[#8A9BFF]">
+                    <MessageSquare className="w-3.5 h-3.5" />
                     <span>Post directly into c/{community.slug}</span>
                   </div>
                   <PostComposer onPostCreated={handleCreatePost} />
@@ -491,14 +438,14 @@ export default function CommunityDetailPage({
                 {/* Posts stream */}
                 <div className="space-y-4">
                   {isLoadingPosts ? (
-                    <div className="bg-white rounded-2xl p-12 text-center border border-zinc-200 shadow-xs">
-                      <div className="w-6 h-6 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-xs text-zinc-500 font-medium">Loading community discussions...</p>
+                    <div className="bg-[#2B2D31] rounded-2xl p-12 text-center border border-white/10 shadow-lg">
+                      <Loader2 className="w-6 h-6 text-[#5865F2] animate-spin mx-auto mb-3" />
+                      <p className="text-xs text-[#B5BAC1] font-medium">Loading community discussions...</p>
                     </div>
                   ) : communityPosts.length === 0 ? (
-                    <div className="bg-white rounded-2xl p-12 text-center border border-zinc-200 shadow-xs">
-                      <p className="text-sm font-semibold text-zinc-800">No discussions yet in c/{community.slug}</p>
-                      <p className="text-xs text-zinc-500 mt-1">Be the first to share an update, showcase project, or start a thread!</p>
+                    <div className="bg-[#2B2D31] rounded-2xl p-12 text-center border border-white/10 shadow-lg">
+                      <p className="text-sm font-semibold text-white font-heading">No discussions yet in c/{community.slug}</p>
+                      <p className="text-xs text-[#B5BAC1] mt-1 font-sans">Be the first to share an update, showcase project, or start a thread!</p>
                     </div>
                   ) : (
                     communityPosts.map((post) => (
@@ -545,48 +492,52 @@ export default function CommunityDetailPage({
                   {showcaseProjects.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-xs hover:border-zinc-300 transition group"
+                      className="bg-[#2B2D31] rounded-2xl border border-white/10 overflow-hidden shadow-xs hover:border-[#5865F2] transition group"
                     >
-                      <div className="h-44 w-full overflow-hidden bg-zinc-100 relative">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                        />
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-zinc-800 shadow-xs flex items-center gap-1.5 border border-zinc-200">
-                          <Flame className="w-3.5 h-3.5 text-zinc-700" />
-                          <span>{item.upvotes}</span>
+                      <div className="h-44 w-full overflow-hidden bg-[#1E1F22] relative">
+                        {item.mediaUrl ? (
+                          <img
+                            src={item.mediaUrl}
+                            alt={item.content.slice(0, 40)}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-r from-[#1E1F22] to-[#383A40]" />
+                        )}
+                        <div className="absolute top-3 right-3 bg-[#1E1F22]/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-[#F2F3F5] shadow-xs flex items-center gap-1.5 border border-white/10">
+                          <Flame className="w-3.5 h-3.5 text-[#8A9BFF]" />
+                          <span>{item.likesCount || 0}</span>
                         </div>
                       </div>
 
                       <div className="p-5">
-                        <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-                          <span className="font-mono text-zinc-700 font-medium">
-                            {item.creator}
+                        <div className="flex items-center justify-between text-xs text-[#B5BAC1] mb-1">
+                          <span className="font-mono text-[#8A9BFF] font-medium">
+                            @{item.author?.username || item.authorUsername || "member"}
                           </span>
                         </div>
-                        <h4 className="font-bold text-zinc-900 group-hover:underline transition">
-                          {item.title}
-                        </h4>
-                        <p className="text-xs text-zinc-600 mt-2 line-clamp-2 leading-relaxed font-sans">
-                          {item.description}
+                        <p className="text-sm font-bold text-white group-hover:text-[#8A9BFF] transition line-clamp-2">
+                          {item.content}
                         </p>
 
-                        <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center justify-between">
+                        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                           <div className="flex flex-wrap gap-1.5">
-                            {item.tags.map((t) => (
+                            {item.tags?.map((t) => (
                               <span
                                 key={t}
-                                className="px-2 py-0.5 bg-zinc-100 rounded-md text-[10px] font-medium text-zinc-600"
+                                className="px-2 py-0.5 bg-[#1E1F22] rounded-md text-[10px] font-medium text-[#B5BAC1]"
                               >
                                 #{t}
                               </span>
                             ))}
                           </div>
-                          <button className="text-xs font-semibold text-zinc-900 hover:underline inline-flex items-center gap-1">
+                          <Link
+                            href={`/posts/${item.id}`}
+                            className="text-xs font-semibold text-[#8A9BFF] hover:underline inline-flex items-center gap-1"
+                          >
                             <span>Inspect</span>
                             <ExternalLink className="w-3.5 h-3.5" />
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -597,13 +548,13 @@ export default function CommunityDetailPage({
 
             {/* TAB: RULES */}
             {activeTab === "rules" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-zinc-200 shadow-xs space-y-6">
+              <div className="bg-[#2B2D31] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-xs space-y-6 text-[#F2F3F5]">
                 <div>
-                  <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-zinc-700" />
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-[#8A9BFF]" />
                     Community Norms & Guidelines
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="text-xs text-[#B5BAC1] mt-1">
                     Please read and adhere to our core standards when
                     participating in c/{community.slug}.
                   </p>
@@ -613,16 +564,16 @@ export default function CommunityDetailPage({
                   {community.rules.map((rule, idx) => (
                     <div
                       key={idx}
-                      className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-start gap-3.5"
+                      className="p-4 rounded-xl bg-[#1E1F22] border border-white/5 flex items-start gap-3.5"
                     >
-                      <div className="w-7 h-7 rounded-lg bg-zinc-200 text-zinc-800 font-bold font-mono text-xs flex items-center justify-center shrink-0">
+                      <div className="w-7 h-7 rounded-lg bg-[#383A40] text-white font-bold font-mono text-xs flex items-center justify-center shrink-0">
                         {idx + 1}
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-zinc-800">
+                        <h4 className="text-sm font-semibold text-white">
                           Rule #{idx + 1}
                         </h4>
-                        <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-sans">
+                        <p className="text-xs text-[#B5BAC1] mt-1 leading-relaxed font-sans">
                           {rule}
                         </p>
                       </div>
@@ -630,8 +581,8 @@ export default function CommunityDetailPage({
                   ))}
                 </div>
 
-                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-700 flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-zinc-800 shrink-0" />
+                <div className="p-4 rounded-xl bg-[#1E1F22] border border-white/10 text-xs text-[#B5BAC1] flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-[#8A9BFF] shrink-0" />
                   <span>
                     Violations may result in content removal or hub expulsion by
                     moderators to preserve community quality.
@@ -642,47 +593,48 @@ export default function CommunityDetailPage({
 
             {/* TAB: MEMBERS */}
             {activeTab === "members" && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 border border-zinc-200 shadow-xs space-y-6">
+              <div className="bg-[#2B2D31] rounded-2xl p-6 sm:p-8 border border-white/10 shadow-xs space-y-6 text-[#F2F3F5]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-zinc-900">
+                    <h3 className="text-lg font-bold text-white">
                       Community Directory
                     </h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-[#B5BAC1] mt-0.5">
                       Meet founders, moderators, and active contributors.
                     </p>
                   </div>
-                  <span className="text-xs font-mono font-semibold text-zinc-500">
+                  <span className="text-xs font-mono font-semibold text-[#B5BAC1]">
                     {members.length} members shown
                   </span>
                 </div>
 
-                <div className="divide-y divide-zinc-100">
+                <div className="divide-y divide-white/10">
                   {members.map((mem) => (
                     <div
                       key={mem.id}
                       className="py-4 flex items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-3.5">
-                        <img
+                        <AvatarImage
                           src={mem.avatar}
-                          alt={mem.displayName}
-                          className="w-10 h-10 rounded-full object-cover border border-zinc-200"
+                          alt={mem.displayName || mem.username}
+                          size="md"
+                          className="w-10 h-10 rounded-full"
                         />
                         <div>
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/profiles/${mem.username}`}
-                              className="font-semibold text-sm text-zinc-900 hover:underline transition"
+                              className="font-semibold text-sm text-white hover:text-[#8A9BFF] transition"
                             >
-                              {mem.displayName}
+                              {mem.displayName || mem.username}
                             </Link>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
-                              {mem.badge}
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1E1F22] text-[#8A9BFF] border border-white/10">
+                              Member
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-500">
-                            @{mem.username} &bull; {mem.role}
+                          <p className="text-xs text-[#B5BAC1]">
+                            @{mem.username} &bull; {mem.role || "Contributor"}
                           </p>
                         </div>
                       </div>
@@ -691,8 +643,8 @@ export default function CommunityDetailPage({
                         onClick={() => toggleFollowMember(mem.id)}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 ${
                           mem.isFollowing
-                            ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                            : "bg-zinc-900 text-white hover:bg-zinc-800"
+                            ? "bg-[#1E1F22] text-[#B5BAC1] hover:bg-[#383A40]"
+                            : "bg-[#5865F2] text-white hover:bg-[#4752C4]"
                         }`}
                       >
                         {mem.isFollowing ? "Following" : "Follow"}
@@ -707,30 +659,30 @@ export default function CommunityDetailPage({
           {/* Right Sidebar Rail */}
           <div className="lg:col-span-4 space-y-6">
             {/* About Card */}
-            <div className="bg-white rounded-2xl p-6 border border-zinc-200 shadow-xs">
-              <h3 className="font-bold text-zinc-900 text-sm mb-3">
+            <div className="bg-[#2B2D31] rounded-2xl p-6 border border-white/10 shadow-xs text-[#F2F3F5]">
+              <h3 className="font-bold text-white text-sm mb-3">
                 About this Hub
               </h3>
-              <p className="text-xs text-zinc-600 leading-relaxed font-sans">
+              <p className="text-xs text-[#B5BAC1] leading-relaxed font-sans">
                 {community.description}
               </p>
 
-              <div className="mt-5 pt-4 border-t border-zinc-100 space-y-2.5 text-xs text-zinc-600">
+              <div className="mt-5 pt-4 border-t border-white/10 space-y-2.5 text-xs text-[#B5BAC1]">
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Created</span>
-                  <span className="font-medium text-zinc-700">
+                  <span className="text-[#B5BAC1]/70">Created</span>
+                  <span className="font-medium text-white">
                     October 2026
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Category</span>
-                  <span className="font-medium text-zinc-700">
+                  <span className="text-[#B5BAC1]/70">Category</span>
+                  <span className="font-medium text-white">
                     {community.category}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Visibility</span>
-                  <span className="font-medium text-emerald-700 flex items-center gap-1">
+                  <span className="text-[#B5BAC1]/70">Visibility</span>
+                  <span className="font-medium text-emerald-400 flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     Public Community
                   </span>
@@ -739,31 +691,31 @@ export default function CommunityDetailPage({
             </div>
 
             {/* Moderators Card */}
-            <div className="bg-white rounded-2xl p-6 border border-zinc-200 shadow-xs">
-              <h3 className="font-bold text-zinc-900 text-sm mb-3 flex items-center gap-2">
-                <Award className="w-4 h-4 text-zinc-700" />
+            <div className="bg-[#2B2D31] rounded-2xl p-6 border border-white/10 shadow-xs text-[#F2F3F5]">
+              <h3 className="font-bold text-white text-sm mb-3 flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#8A9BFF]" />
                 Hub Moderators
               </h3>
               <div className="space-y-3">
                 {community.moderators.map((mod) => (
                   <div key={mod.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-900 font-bold flex items-center justify-center text-xs border border-zinc-200">
+                      <div className="w-8 h-8 rounded-full bg-[#1E1F22] text-[#8A9BFF] font-bold flex items-center justify-center text-xs border border-white/10">
                         {mod.displayName.charAt(0)}
                       </div>
                       <div>
                         <Link
                           href={`/profiles/${mod.username}`}
-                          className="text-xs font-semibold text-zinc-800 hover:underline block transition"
+                          className="text-xs font-semibold text-white hover:text-[#8A9BFF] block transition"
                         >
                           {mod.displayName}
                         </Link>
-                        <span className="text-[10px] text-zinc-400 font-mono">
+                        <span className="text-[10px] text-[#B5BAC1] font-mono">
                           @{mod.username}
                         </span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-semibold text-zinc-800 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold text-[#8A9BFF] bg-[#1E1F22] border border-white/10 px-2 py-0.5 rounded-full">
                       Mod
                     </span>
                   </div>
@@ -772,11 +724,11 @@ export default function CommunityDetailPage({
             </div>
 
             {/* Helpful Resources */}
-            <div className="bg-zinc-50 rounded-2xl p-5 border border-zinc-200">
-              <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wider mb-2">
+            <div className="bg-[#2B2D31]/60 rounded-2xl p-5 border border-white/10">
+              <h4 className="text-xs font-bold text-[#8A9BFF] uppercase tracking-wider mb-2">
                 Community Charter
               </h4>
-              <p className="text-xs text-zinc-500 leading-relaxed font-sans">
+              <p className="text-xs text-[#B5BAC1] leading-relaxed font-sans">
                 POPPIN hubs are governed by peer consensus and craft excellence.
                 Spam, abusive conduct, or low-effort slop will be moderated
                 swiftly.

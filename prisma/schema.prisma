@@ -15,6 +15,7 @@ model User {
   passwordHash String?
   googleId     String?   @unique
   tokenVersion Int       @default(1)
+  isEmailVerified Boolean @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -24,6 +25,7 @@ model User {
 
   // Password reset tokens
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 
   // Connections (Followers & Following)
   following              Follow[]        @relation("UserFollowing")
@@ -49,12 +51,27 @@ model User {
   notificationsReceived  Notification[] @relation("NotificationRecipient")
   notificationsTriggered Notification[] @relation("NotificationActor")
   communityMemberships   CommunityMember[]
+  communityJoinRequests  CommunityJoinRequest[]
+  communityInvitationsSent CommunityInvitation[] @relation("CommunityInviter")
+  communityInvitationsReceived CommunityInvitation[] @relation("CommunityInvitee")
   media                  Media[]
   messageReceipts        MessageReceipt[]
   messageReactions       MessageReaction[]
 }
 
 model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -361,12 +378,15 @@ model Community {
   avatar      String?
   coverImage  String?
   rules       String            @default("[]")
+  isPrivate   Boolean           @default(false)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  members     CommunityMember[]
-  posts       Post[]
-  channels    Channel[]
+  members      CommunityMember[]
+  posts        Post[]
+  channels     Channel[]
+  joinRequests CommunityJoinRequest[]
+  invitations  CommunityInvitation[]
 
   @@index([category])
   @@index([createdAt])
@@ -384,6 +404,39 @@ model CommunityMember {
   @@unique([communityId, userId])
   @@index([userId])
   @@index([communityId])
+}
+
+model CommunityJoinRequest {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([communityId, userId])
+  @@index([communityId, status])
+  @@index([userId])
+}
+
+model CommunityInvitation {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  inviterId   String
+  inviter     User      @relation("CommunityInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  inviteeId   String?
+  invitee     User?     @relation("CommunityInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  code        String    @unique
+  expiresAt   DateTime?
+  maxUses     Int       @default(1)
+  uses        Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([communityId])
+  @@index([code])
 }
 
 model Media {

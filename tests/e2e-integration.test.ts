@@ -188,7 +188,7 @@ export async function runE2EIntegrationTests() {
 
   // Verify Bob's public profile reflects 1 follower
   const pubBobRes = await getPublicProfileHandler(
-    createJsonRequest("/api/v1/profiles/bob_poppin", "GET"),
+    createJsonRequest("/api/v1/profiles/bob_poppin", "GET", undefined, aliceToken),
     { params: Promise.resolve({ username: "bob_poppin" }) }
   );
   const pubBobData = await pubBobRes.json();
@@ -225,7 +225,7 @@ export async function runE2EIntegrationTests() {
 
   // Bob's followers count should now be 0
   const pubBobAfterBlock = await getPublicProfileHandler(
-    createJsonRequest("/api/v1/profiles/bob_poppin", "GET"),
+    createJsonRequest("/api/v1/profiles/bob_poppin", "GET", undefined, bobToken),
     { params: Promise.resolve({ username: "bob_poppin" }) }
   );
   const pubBobAfterBlockData = await pubBobAfterBlock.json();

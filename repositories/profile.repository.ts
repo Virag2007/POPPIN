@@ -52,12 +52,12 @@ export class ProfileRepository {
     return prisma.profile.update({
       where: { userId },
       data: {
-        ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
-        ...(data.avatar !== undefined ? { avatar: data.avatar } : {}),
-        ...(data.coverImage !== undefined ? { coverImage: data.coverImage } : {}),
-        ...(data.headline !== undefined ? { headline: data.headline } : {}),
-        ...(data.bio !== undefined ? { bio: data.bio } : {}),
-        ...(data.location !== undefined ? { location: data.location } : {}),
+        ...(data.displayName !== undefined ? { displayName: data.displayName ? data.displayName.trim() : null } : {}),
+        ...(data.avatar !== undefined ? { avatar: data.avatar ? data.avatar.trim() : null } : {}),
+        ...(data.coverImage !== undefined ? { coverImage: data.coverImage ? data.coverImage.trim() : null } : {}),
+        ...(data.headline !== undefined ? { headline: data.headline ? data.headline.trim() : null } : {}),
+        ...(data.bio !== undefined ? { bio: data.bio ? data.bio.trim() : null } : {}),
+        ...(data.location !== undefined ? { location: data.location ? data.location.trim() : null } : {}),
       },
     });
   }

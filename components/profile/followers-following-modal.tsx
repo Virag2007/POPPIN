@@ -41,7 +41,7 @@ export function FollowersFollowingModal({
   isOpen,
   onClose,
   userId,
-  username: _username,
+  username,
   initialTab = "followers",
   isOwnProfile = false,
   isPrivate = false,
@@ -237,14 +237,17 @@ export function FollowersFollowingModal({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close modal"
-            className="text-[#B5BAC1] hover:text-white p-1 rounded-lg hover:bg-[#383A40] transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono text-zinc-400">@{username}</span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close modal"
+              className="text-[#B5BAC1] hover:text-white p-1 rounded-lg hover:bg-[#383A40] transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}

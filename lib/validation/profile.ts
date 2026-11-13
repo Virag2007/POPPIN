@@ -16,28 +16,37 @@ export const safeHttpUrlSchema = z
     }
   }, "Only http:// and https:// URLs are permitted");
 
-export const safeOptionalUrlSchema = safeHttpUrlSchema.optional().or(z.literal(""));
+export const safeOptionalUrlSchema = z
+  .union([
+    safeHttpUrlSchema,
+    z.string().trim().startsWith("/"),
+    z.literal(""),
+    z.null(),
+    z.undefined(),
+  ])
+  .optional()
+  .nullable();
 
 export const createProfileSchema = z.object({
   username: z
     .string()
     .trim()
     .regex(usernameRegex, "Username must be 3-30 characters and contain only letters, numbers, and underscores"),
-  displayName: z.string().trim().max(100).optional(),
+  displayName: z.string().trim().max(100).optional().nullable().or(z.literal("")),
   avatar: safeOptionalUrlSchema,
   coverImage: safeOptionalUrlSchema,
-  headline: z.string().trim().max(160).optional(),
-  bio: z.string().trim().max(1000).optional(),
-  location: z.string().trim().max(100).optional(),
+  headline: z.string().trim().max(160).optional().nullable().or(z.literal("")),
+  bio: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
+  location: z.string().trim().max(100).optional().nullable().or(z.literal("")),
 });
 
 export const updateProfileSchema = z.object({
-  displayName: z.string().trim().max(100).optional(),
+  displayName: z.string().trim().max(100).optional().nullable().or(z.literal("")),
   avatar: safeOptionalUrlSchema,
   coverImage: safeOptionalUrlSchema,
-  headline: z.string().trim().max(160).optional(),
-  bio: z.string().trim().max(1000).optional(),
-  location: z.string().trim().max(100).optional(),
+  headline: z.string().trim().max(160).optional().nullable().or(z.literal("")),
+  bio: z.string().trim().max(1000).optional().nullable().or(z.literal("")),
+  location: z.string().trim().max(100).optional().nullable().or(z.literal("")),
 });
 
 export const updateSkillsSchema = z.object({

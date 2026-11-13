@@ -1,0 +1,35 @@
+import { NextRequest } from "next/server";
+import { AuthService } from "@/services/auth.service";
+import { verifyEmailSchema } from "@/lib/validation/auth";
+import { successResponse, handleRouteError } from "@/lib/http/response";
+import { enforceRateLimit } from "@/lib/http/rate-limit";
+
+export async function POST(request: NextRequest) {
+  try {
+    const rateLimitCheck = enforceRateLimit(request, "auth:verify-email", { windowMs: 60_000, max: 30 });
+    if (!rateLimitCheck.isAllowed && rateLimitCheck.response) {
+      return rateLimitCheck.response;
+    }
+
+    const body = await request.json();
+    const validated = verifyEmailSchema.parse(body);
+
+    const result = await AuthService.verifyEmail(validated);
+
+    const response = successResponse(result, 200, result.message);
+    if (result.token) {
+      response.cookies.set("poppin_token", result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+      });
+    }
+
+    return response;
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+

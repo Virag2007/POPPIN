@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH /api/v1/users/me/profile - Edit avatar, cover image, headline, bio, location
+// PATCH & PUT /api/v1/users/me/profile - Edit avatar, cover image, headline, bio, location
 export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request);
@@ -42,4 +42,6 @@ export async function PATCH(request: NextRequest) {
     return handleRouteError(error);
   }
 }
+
+export const PUT = PATCH;
 

@@ -113,6 +113,12 @@ export async function runPhase1Tests() {
 
   // 5. Login with valid credentials
   console.log("5. Testing Valid Login...");
+  // Mark email verified for alice so login succeeds
+  await prisma.user.update({
+    where: { email: "alice@example.com" },
+    data: { isEmailVerified: true },
+  });
+
   const loginReq = createJsonRequest("/api/v1/auth/login", "POST", {
     email: "alice@example.com",
     password: "Password123!",

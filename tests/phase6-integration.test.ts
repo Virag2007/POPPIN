@@ -339,7 +339,7 @@ export async function runPhase6IntegrationTests() {
     assert.strictEqual(deletePostRes.status, 200);
 
     // Verify post is gone
-    const checkPostReq = createJsonRequest(`/api/v1/posts/${postId}`, "GET");
+    const checkPostReq = createJsonRequest(`/api/v1/posts/${postId}`, "GET", undefined, { token: aliceToken });
     const checkPostRes = await getPostHandler(checkPostReq, { params: Promise.resolve({ postId }) });
     assert.strictEqual(checkPostRes.status, 404);
 

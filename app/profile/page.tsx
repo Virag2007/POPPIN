@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { SafeProfile, EducationItem, ExperienceItem, PostResponse } from "@/types";
 import { PostCard } from "@/components/posts/post-card";
 import { FollowersFollowingModal } from "@/components/profile/followers-following-modal";
+import { FileUpload } from "@/components/ui/file-upload";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import {
   MapPin,
   Briefcase,
@@ -47,6 +49,7 @@ export default function OwnProfilePage() {
   const [coverImage, setCoverImage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Modals for sub-collections
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -115,10 +118,11 @@ export default function OwnProfilePage() {
     if (!token) return;
     setIsSaving(true);
     setSaveSuccess(false);
+    setSaveError(null);
 
     try {
       const res = await fetch("/api/v1/users/me/profile", {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -134,19 +138,19 @@ export default function OwnProfilePage() {
       });
 
       const data = await res.json();
-      if (data.success && data.data) {
+      if (res.ok && data.success && data.data) {
         setProfileData(data.data);
         updateProfileState(data.data);
         setSaveSuccess(true);
         setTimeout(() => {
           setShowEditModal(false);
           setSaveSuccess(false);
-        }, 800);
+        }, 900);
       } else {
-        alert(data.error?.message || "Failed to update profile");
+        setSaveError(data.error?.message || "Failed to update profile. Please verify your input.");
       }
-    } catch {
-      alert("Error saving profile");
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Error saving profile. Please check connection.");
     } finally {
       setIsSaving(false);
     }
@@ -349,17 +353,12 @@ export default function OwnProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20 mb-6">
             {/* Avatar */}
             <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#2B2D31] p-1.5 shadow-xl border-2 border-white/10 shrink-0">
-              <div className="w-full h-full rounded-full bg-[#383A40] text-white font-bold flex items-center justify-center text-3xl sm:text-4xl overflow-hidden font-heading">
-                {profileData?.avatar ? (
-                  <img
-                    src={profileData.avatar}
-                    alt={profileData.displayName || "Avatar"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  profileData?.username?.slice(0, 2).toUpperCase() || "P"
-                )}
-              </div>
+              <AvatarImage
+                src={profileData?.avatar}
+                alt={profileData?.displayName || profileData?.username || "Avatar"}
+                size="2xl"
+                className="w-full h-full text-3xl sm:text-4xl"
+              />
             </div>
 
             {/* Quick Actions */}
@@ -749,8 +748,15 @@ export default function OwnProfilePage() {
 
             {saveSuccess && (
               <div className="p-3 mb-4 bg-emerald-500/10 text-emerald-300 rounded-xl text-xs flex items-center gap-2 border border-emerald-500/20">
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
                 Profile updated successfully!
+              </div>
+            )}
+
+            {saveError && (
+              <div className="p-3 mb-4 bg-rose-500/10 text-rose-300 rounded-xl text-xs flex items-center gap-2 border border-rose-500/20">
+                <X className="w-4 h-4 shrink-0 text-rose-400" />
+                {saveError}
               </div>
             )}
 
@@ -799,24 +805,22 @@ export default function OwnProfilePage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Avatar Image URL</label>
-                <input
-                  type="text"
-                  value={avatar}
-                  onChange={(e) => setAvatar(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                <FileUpload
+                  label="Profile Picture"
+                  currentValue={avatar}
+                  onUploadSuccess={(file) => setAvatar(file.url)}
+                  onRemove={() => setAvatar("")}
+                  token={token}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Cover Image URL</label>
-                <input
-                  type="text"
-                  value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                <FileUpload
+                  label="Cover Banner"
+                  currentValue={coverImage}
+                  onUploadSuccess={(file) => setCoverImage(file.url)}
+                  onRemove={() => setCoverImage("")}
+                  token={token}
                 />
               </div>
 

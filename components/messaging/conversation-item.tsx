@@ -1,37 +1,48 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { ConversationResponse } from "@/types";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 interface ConversationItemProps {
   conversation: ConversationResponse;
   currentUserId?: string;
   isActive?: boolean;
+  isOnline?: boolean;
 }
 
 export function ConversationItem({
   conversation,
   currentUserId,
   isActive = false,
+  isOnline = false,
 }: ConversationItemProps) {
-  // Determine title and avatar
-  let title = conversation.name;
+  let displayName = conversation.name;
+  let username: string | null = null;
   let avatar = conversation.avatar;
+  let isDeleted = false;
 
-  if (!conversation.isGroup && currentUserId) {
-    const otherMember = conversation.members.find((m) => m.userId !== currentUserId);
-    if (otherMember) {
-      title = otherMember.user.displayName || otherMember.user.username || "User";
-      avatar = otherMember.user.avatar || null;
+  if (!conversation.isGroup) {
+    const otherMember = currentUserId
+      ? conversation.members.find((m) => m.userId !== currentUserId)
+      : conversation.members[0];
+
+    if (otherMember?.user) {
+      displayName = otherMember.user.displayName || otherMember.user.username || "Member";
+      username = otherMember.user.username ?? null;
+      avatar = otherMember.user.avatar ?? null;
+    } else {
+      displayName = "Deleted Account";
+      username = "deleted";
+      avatar = null;
+      isDeleted = true;
     }
   }
 
-  if (!title) {
-    title = conversation.isGroup ? "Group Chat" : "Direct Message";
+  if (!displayName) {
+    displayName = conversation.isGroup ? "Group Chat" : "Direct Message";
   }
 
-  const initials = title.slice(0, 2).toUpperCase();
   const lastMessageSnippet = conversation.lastMessage
     ? conversation.lastMessage.content
     : "No messages yet";
@@ -44,49 +55,63 @@ export function ConversationItem({
     : "";
 
   return (
-    <Link
-      href={`/messages/${conversation.id}`}
-      className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${
+    <div
+      className={`flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer ${
         isActive
-          ? "bg-poppin-lilac-light/80 border border-poppin-lilac-border shadow-2xs"
-          : "hover:bg-slate-50 border border-transparent"
+          ? "bg-[#383A40] text-white"
+          : "hover:bg-[#2B2D31] text-[#B5BAC1]"
       }`}
     >
-      {avatar ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+      <div className="relative shrink-0">
+        <AvatarImage
           src={avatar}
-          alt={title}
-          className="w-10 h-10 rounded-2xl object-cover shrink-0 ring-1 ring-slate-200"
+          alt={displayName}
+          size="md"
+          className={isDeleted ? "opacity-50 grayscale" : ""}
         />
-      ) : (
-        <div className="w-10 h-10 rounded-2xl bg-poppin-lilac-light text-poppin-lilac border border-poppin-lilac-border flex items-center justify-center font-bold text-xs shrink-0 font-mono">
-          {initials}
-        </div>
-      )}
+        {isOnline && !conversation.isGroup && (
+          <span
+            className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-[#2B2D31]"
+            title="Online"
+          />
+        )}
+      </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <h4 className="text-xs font-heading font-bold text-slate-900 truncate flex items-center gap-1.5">
-            <span>{title}</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h4 className="text-xs font-heading font-bold text-white truncate">
+              {displayName}
+            </h4>
+            {username && (
+              <span className="text-[10px] text-[#B5BAC1] font-mono truncate">
+                @{username}
+              </span>
+            )}
             {conversation.isGroup && (
-              <span className="px-1.5 py-0.5 rounded-full bg-poppin-lilac/10 text-poppin-lilac text-[10px] font-semibold">
+              <span className="px-1.5 py-0.2 rounded-full bg-[#5865F2]/20 text-[#8A9BFF] text-[9px] font-semibold shrink-0">
                 Group
               </span>
             )}
-          </h4>
-          {formattedDate && <span className="text-[10px] text-slate-400 font-mono">{formattedDate}</span>}
+          </div>
+          {formattedDate && (
+            <span className="text-[10px] text-[#B5BAC1]/70 font-mono shrink-0 ml-2">
+              {formattedDate}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-500 truncate mr-2 leading-relaxed">{lastMessageSnippet}</p>
+          <p className="text-xs text-[#B5BAC1] truncate mr-2 leading-relaxed">
+            {lastMessageSnippet}
+          </p>
           {conversation.unreadCount > 0 && (
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-poppin-lilac text-white shrink-0">
+            <span className="inline-flex items-center justify-center min-w-[18px] h-4.5 px-1.5 rounded-full text-[10px] font-bold bg-[#5865F2] text-white shrink-0 shadow-sm">
               {conversation.unreadCount}
             </span>
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

@@ -117,7 +117,9 @@ export async function runPhase7CommunitiesSearchTests() {
 
   // 4. Testing Community Details Retrieval by Slug
   console.log("4. Testing Community Retrieval (GET /api/v1/communities/:slug)...");
-  const getReq = new NextRequest(`http://localhost:3000/api/v1/communities/${commSlug}`);
+  const getReq = new NextRequest(`http://localhost:3000/api/v1/communities/${commSlug}`, {
+    headers: { Authorization: `Bearer ${bobToken}` },
+  });
   const getRes = await getCommunityRoute(getReq, {
     params: Promise.resolve({ slug: commSlug }),
   });

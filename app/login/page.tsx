@@ -61,7 +61,11 @@ function LoginForm() {
         login(data.data.token, data.data.user);
         router.push(nextUrl);
       } else {
-        setErrorMsg(data.error?.message || "Invalid credentials. Please verify your details.");
+        if (data.error?.code === "EMAIL_NOT_VERIFIED") {
+          setErrorMsg("Your email address is not verified yet. Please check your verification code or register to verify.");
+        } else {
+          setErrorMsg(data.error?.message || "Invalid credentials. Please verify your details.");
+        }
       }
     } catch {
       setErrorMsg("Failed to connect to authentication server. Please try again.");

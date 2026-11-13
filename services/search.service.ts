@@ -87,10 +87,10 @@ export class SearchService {
   }
 
   static async getExploreData() {
-    const [trendingTags, topCreators, topCommunities] = await Promise.all([
+    const [trendingTags, topCreators, topCommunities, showcasePosts] = await Promise.all([
       SearchRepository.getTrendingTags(6),
       prisma.profile.findMany({
-        take: 4,
+        take: 6,
         orderBy: { user: { followers: { _count: "desc" } } },
         include: {
           user: {
@@ -107,6 +107,21 @@ export class SearchService {
           _count: { select: { members: true, posts: true } },
         },
       }),
+      prisma.post.findMany({
+        take: 6,
+        orderBy: { likes: { _count: "desc" } },
+        include: {
+          author: {
+            include: {
+              profile: true,
+            },
+          },
+          media: true,
+          _count: {
+            select: { likes: true, comments: true },
+          },
+        },
+      }),
     ]);
 
     return {
@@ -120,8 +135,8 @@ export class SearchService {
         username: c.username,
         displayName: c.displayName || c.username,
         role: c.headline || "Poppin Creator",
-        avatar: c.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
-        cover: c.coverImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+        avatar: c.avatar || "",
+        cover: c.coverImage || "",
         followersCount: c.user._count.followers,
         tags: (() => {
           try {
@@ -140,6 +155,17 @@ export class SearchService {
         coverImage: cm.coverImage,
         membersCount: cm._count.members,
         category: cm.category,
+      })),
+      showcasePosts: showcasePosts.map((p) => ({
+        id: p.id,
+        title: p.content.slice(0, 80) + (p.content.length > 80 ? "..." : ""),
+        creator: p.author.profile?.displayName || p.author.profile?.username || "Creator",
+        username: p.author.profile?.username || "user",
+        avatar: p.author.profile?.avatar || "",
+        image: p.media[0]?.url || "",
+        likes: p._count.likes,
+        comments: p._count.comments,
+        type: p.type,
       })),
     };
   }

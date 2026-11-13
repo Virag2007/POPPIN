@@ -10,7 +10,8 @@ import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { OnlineIndicator } from "./OnlineIndicator";
-import { ArrowLeft, Loader2, User } from "lucide-react";
+import { AvatarImage } from "@/components/ui/avatar-image";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: ConversationResponse;
@@ -59,15 +60,7 @@ export function ChatWindow({
           )}
 
           <div className="relative">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#383A40] border border-white/10">
-              {avatar ? (
-                <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-xs text-white bg-[#383A40] font-heading">
-                  {displayName[0]?.toUpperCase() || <User className="w-4 h-4 text-zinc-400" />}
-                </div>
-              )}
-            </div>
+            <AvatarImage src={avatar} alt={displayName} size="md" />
             <div className="absolute -bottom-0.5 -right-0.5">
               <OnlineIndicator isOnline={isPartnerOnline} size="sm" />
             </div>

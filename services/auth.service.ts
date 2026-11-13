@@ -4,7 +4,7 @@ import { UserRepository } from "@/repositories/user.repository";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { AppError } from "@/lib/http/response";
-import { RegisterInput, LoginInput } from "@/lib/validation/auth";
+import { RegisterInput, LoginInput, VerifyEmailInput, ResendVerificationInput } from "@/lib/validation/auth";
 
 export class AuthService {
   static async register(input: RegisterInput) {
@@ -23,17 +23,26 @@ export class AuthService {
     }
 
     const passwordHash = await hashPassword(input.password);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
           email: input.email.toLowerCase(),
           passwordHash,
+          isEmailVerified: false,
           privacySettings: {
             create: {},
           },
           onboarding: {
             create: {},
+          },
+          emailVerificationTokens: {
+            create: {
+              token: verificationCode,
+              expiresAt: verificationExpiresAt,
+            },
           },
           ...(input.username
             ? {
@@ -49,6 +58,7 @@ export class AuthService {
         select: {
           id: true,
           email: true,
+          isEmailVerified: true,
           tokenVersion: true,
           createdAt: true,
           updatedAt: true,
@@ -68,11 +78,121 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        isEmailVerified: user.isEmailVerified,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         profile: user.profile,
       },
       token,
+      verificationCode,
+      requiresVerification: true,
+    };
+  }
+
+  static async verifyEmail(input: VerifyEmailInput) {
+    const user = await UserRepository.findByEmail(input.email);
+    if (!user) {
+      throw new AppError("Account not found", 404, "USER_NOT_FOUND");
+    }
+
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (user.isEmailVerified) {
+      const token = signToken({
+        userId: user.id,
+        email: user.email,
+        tokenVersion: user.tokenVersion,
+      });
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          isEmailVerified: true,
+          profile: userProfile,
+        },
+        token,
+        message: "Email is already verified",
+      };
+    }
+
+    const validToken = await prisma.emailVerificationToken.findFirst({
+      where: {
+        userId: user.id,
+        token: input.token.trim(),
+        used: false,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!validToken) {
+      throw new AppError("Invalid or expired verification code", 400, "INVALID_VERIFICATION_CODE");
+    }
+
+    await prisma.$transaction([
+      prisma.emailVerificationToken.update({
+        where: { id: validToken.id },
+        data: { used: true },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { isEmailVerified: true },
+      }),
+    ]);
+
+    const token = signToken({
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        isEmailVerified: true,
+        profile: userProfile,
+      },
+      token,
+      message: "Email successfully verified",
+    };
+  }
+
+  static async resendVerification(input: ResendVerificationInput) {
+    const user = await UserRepository.findByEmail(input.email);
+    if (!user) {
+      throw new AppError("Account not found", 404, "USER_NOT_FOUND");
+    }
+
+    if (user.isEmailVerified) {
+      return {
+        message: "Email is already verified",
+        requiresVerification: false,
+      };
+    }
+
+    // Invalidate existing unused tokens
+    await prisma.emailVerificationToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    });
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: code,
+        expiresAt,
+      },
+    });
+
+    return {
+      message: "New verification code generated",
+      verificationCode: code,
+      requiresVerification: true,
     };
   }
 
@@ -85,6 +205,14 @@ export class AuthService {
     const isMatch = await verifyPassword(input.password, user.passwordHash);
     if (!isMatch) {
       throw new AppError("Invalid email or password", 401, "INVALID_CREDENTIALS");
+    }
+
+    if (user.isEmailVerified === false) {
+      throw new AppError(
+        "Please verify your email address before logging in",
+        403,
+        "EMAIL_NOT_VERIFIED"
+      );
     }
 
     const token = signToken({

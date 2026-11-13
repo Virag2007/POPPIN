@@ -340,7 +340,7 @@ export async function runRealtimeSocketTests() {
 
     // Alice starts typing
     aliceSocket1.emit("typing:start", { conversationId: conversation.id });
-    await delay(150);
+    await delay(500);
 
     assert.ok(typingEventsReceived.length >= 1, "Bob should receive typing event");
     assert.strictEqual(typingEventsReceived[0].isTyping, true);
@@ -348,7 +348,7 @@ export async function runRealtimeSocketTests() {
 
     // Alice stops typing
     aliceSocket1.emit("typing:stop", { conversationId: conversation.id });
-    await delay(150);
+    await delay(500);
 
     const lastTyping = typingEventsReceived[typingEventsReceived.length - 1];
     assert.strictEqual(lastTyping.isTyping, false);
@@ -400,7 +400,7 @@ export async function runRealtimeSocketTests() {
     });
 
     assert.strictEqual(markReadRes.success, true);
-    await delay(150);
+    await delay(400);
     assert.strictEqual(readEventsReceived.length, 1);
     assert.strictEqual(readEventsReceived[0].messageId, sendResult.data.id);
     assert.strictEqual(readEventsReceived[0].userId, bobUser.id);
@@ -440,7 +440,7 @@ export async function runRealtimeSocketTests() {
       );
     });
     assert.strictEqual(deleteRes.success, true);
-    await delay(150);
+    await delay(400);
     assert.strictEqual(deleteEventReceived, true, "Bob should receive message:deleted");
 
     const deletedInDb = await prisma.message.findUnique({

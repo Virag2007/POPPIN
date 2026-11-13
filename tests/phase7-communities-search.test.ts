@@ -9,6 +9,7 @@ import { SearchService } from "../services/search.service";
 import { POST as createCommunityRoute, GET as listCommunitiesRoute } from "../app/api/v1/communities/route";
 import { GET as getCommunityRoute } from "../app/api/v1/communities/[slug]/route";
 import { POST as joinCommunityRoute, DELETE as leaveCommunityRoute } from "../app/api/v1/communities/[slug]/join/route";
+import { POST as createCommunityPostRoute, GET as getCommunityPostsRoute } from "../app/api/v1/communities/[slug]/posts/route";
 import { GET as searchRoute } from "../app/api/v1/search/route";
 import { GET as exploreRoute } from "../app/api/v1/explore/route";
 import { NextRequest } from "next/server";
@@ -175,6 +176,40 @@ export async function runPhase7CommunitiesSearchTests() {
   assert.strictEqual(expData.success, true);
   assert.ok(Array.isArray(expData.data.featuredCommunities));
   assert.ok(Array.isArray(expData.data.featuredCreators));
+
+  // 9. Testing Community Discussion Posts Storage and Retrieval
+  console.log("9. Testing Community Discussion Post Storage (POST & GET /api/v1/communities/:slug/posts)...");
+  const discReq = new NextRequest(`http://localhost:3000/api/v1/communities/${commSlug}/posts`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${aliceToken}`,
+    },
+    body: JSON.stringify({
+      content: "Welcome to our new community discussion on design systems and craft!",
+      type: "PROJECT_SHOWCASE",
+      tags: ["design", "showcase"],
+      media: [],
+    }),
+  });
+  const discRes = await createCommunityPostRoute(discReq, {
+    params: Promise.resolve({ slug: commSlug }),
+  });
+  const discData = await discRes.json();
+  assert.strictEqual(discRes.status, 201);
+  assert.strictEqual(discData.success, true);
+  assert.ok(discData.data.id);
+
+  // Retrieve discussions from PostgreSQL
+  const listDiscReq = new NextRequest(`http://localhost:3000/api/v1/communities/${commSlug}/posts`);
+  const listDiscRes = await getCommunityPostsRoute(listDiscReq, {
+    params: Promise.resolve({ slug: commSlug }),
+  });
+  const listDiscData = await listDiscRes.json();
+  assert.strictEqual(listDiscRes.status, 200);
+  assert.strictEqual(listDiscData.success, true);
+  assert.ok(listDiscData.data.items.length >= 1);
+  assert.strictEqual(listDiscData.data.items[0].content, "Welcome to our new community discussion on design systems and craft!");
 
   // Clean up test community and users
   await prisma.community.delete({ where: { slug: commSlug } }).catch(() => {});

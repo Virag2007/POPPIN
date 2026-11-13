@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
-import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { getOptionalAuthenticatedUser, getAuthenticatedUser } from "@/lib/auth/middleware";
 import { CommunityRepository } from "@/repositories/community.repository";
 import { prisma } from "@/lib/db";
 import { PostService, PostDbRecord } from "@/services/post.service";
-import { successResponse, handleRouteError } from "@/lib/http/response";
+import { createPostSchema } from "@/lib/validation/post";
+import { successResponse, handleRouteError, AppError } from "@/lib/http/response";
 
 export async function GET(
   request: NextRequest,
@@ -81,6 +82,40 @@ export async function GET(
       },
       200
     );
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+    const user = await getAuthenticatedUser(request);
+
+    const community = await CommunityRepository.findBySlug(slug);
+    if (!community) {
+      return handleRouteError(new AppError("Community not found", 404, "COMMUNITY_NOT_FOUND"));
+    }
+
+    // Check membership for posting if community is private
+    if (community.isPrivate) {
+      const isMember = await CommunityRepository.isMember(community.id, user.id);
+      if (!isMember) {
+        return handleRouteError(new AppError("Only members can post in this private community", 403, "NOT_COMMUNITY_MEMBER"));
+      }
+    }
+
+    const body = await request.json();
+    const validated = createPostSchema.parse({
+      ...body,
+      communityId: community.id,
+    });
+
+    const post = await PostService.createPost(user.id, validated);
+    return successResponse(post, 201, "Discussion post created successfully");
   } catch (error) {
     return handleRouteError(error);
   }

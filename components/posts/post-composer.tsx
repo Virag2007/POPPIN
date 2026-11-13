@@ -6,6 +6,8 @@ import { PostResponse, PostType } from "@/types";
 interface PostComposerProps {
   onPostCreated?: (post: PostResponse) => void;
   token?: string | null;
+  communityId?: string;
+  placeholder?: string;
 }
 
 interface MediaItemInput {
@@ -21,7 +23,7 @@ interface LinkItemInput {
   url: string;
 }
 
-export function PostComposer({ onPostCreated, token }: PostComposerProps) {
+export function PostComposer({ onPostCreated, token, communityId, placeholder }: PostComposerProps) {
   const [content, setContent] = useState("");
   const [type, setType] = useState<PostType>("UPDATE");
   const [media, setMedia] = useState<MediaItemInput[]>([]);
@@ -198,11 +200,12 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
     setErrorMessage(null);
 
     try {
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") || localStorage.getItem("poppin_token") : null);
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+      if (activeToken) {
+        headers["Authorization"] = `Bearer ${activeToken}`;
       }
 
       const res = await fetch("/api/v1/posts", {
@@ -211,6 +214,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
         body: JSON.stringify({
           content: content.trim(),
           type,
+          communityId: communityId || undefined,
           links,
           tags,
           media,
@@ -294,7 +298,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Share an update, showcase project milestones, or start a discussion..."
+            placeholder={placeholder || "Share an update, showcase project milestones, or start a discussion..."}
             rows={4}
             maxLength={5000}
             className="w-full p-4 text-sm text-white bg-[#141517] border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5865F2]/20 focus:border-[#5865F2] transition-all placeholder:text-zinc-500 resize-none font-sans"

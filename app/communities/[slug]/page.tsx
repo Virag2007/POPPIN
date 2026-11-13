@@ -3,8 +3,10 @@
 
 import React, { useState, use } from "react";
 import Link from "next/link";
-import { Community, FeedPost } from "@/types";
-import { PostComposer, PostCard } from "@/components/feed";
+import { useAuth } from "@/context/AuthContext";
+import { Community, PostResponse } from "@/types";
+import { PostComposer } from "@/components/posts/post-composer";
+import { PostCard } from "@/components/posts/post-card";
 import { AvatarImage } from "@/components/ui/avatar-image";
 import {
   ArrowLeft,
@@ -25,31 +27,13 @@ interface CommunitySlugParams {
   slug: string;
 }
 
-interface CommunityPostApiItem {
-  id: string;
-  author: {
-    id: string;
-    username: string;
-    displayName: string | null;
-    avatar: string | null;
-    headline: string | null;
-  };
-  content: string;
-  createdAt: string;
-  likesCount?: number;
-  isLiked?: boolean;
-  commentsCount?: number;
-  community?: { id: string; name: string; slug: string };
-  tags?: string[];
-  media?: { url: string }[];
-}
-
 export default function CommunityDetailPage({
   params,
 }: {
   params: Promise<CommunitySlugParams>;
 }) {
   const resolvedParams = use(params);
+  const { user, token } = useAuth();
 
   const [community, setCommunity] = useState<Community>({
     id: `comm_${resolvedParams.slug}`,
@@ -73,7 +57,7 @@ export default function CommunityDetailPage({
     moderators: [],
   });
 
-  const [communityPosts, setCommunityPosts] = useState<FeedPost[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<PostResponse[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [activeTab, setActiveTab] = useState<
     "discussions" | "showcase" | "rules" | "members"
@@ -86,9 +70,9 @@ export default function CommunityDetailPage({
 
     async function loadData() {
       try {
-        const token = typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null;
+        const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null);
         const headers: Record<string, string> = {};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
         // 1. Fetch Community details
         const commRes = await fetch(`/api/v1/communities/${resolvedParams.slug}`, { headers });
@@ -101,32 +85,8 @@ export default function CommunityDetailPage({
         setIsLoadingPosts(true);
         const postsRes = await fetch(`/api/v1/communities/${resolvedParams.slug}/posts`, { headers });
         const postsData = await postsRes.json();
-        if (isMounted && postsRes.ok && postsData.success && postsData.data?.items) {
-          const mapped: FeedPost[] = (postsData.data.items as CommunityPostApiItem[]).map((p) => ({
-            id: p.id,
-            author: {
-              id: p.author.id,
-              username: p.author.username,
-              displayName: p.author.displayName || p.author.username,
-              avatar: p.author.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-              role: p.author.headline || "Builder",
-              isFollowing: false,
-            },
-            content: p.content,
-            createdAt: new Date(p.createdAt || Date.now()).toLocaleDateString(),
-            likesCount: p.likesCount || 0,
-            isLiked: p.isLiked || false,
-            commentsCount: p.commentsCount || 0,
-            community: {
-              id: p.community?.id || commData.data?.id || "",
-              name: p.community?.name || commData.data?.name || resolvedParams.slug,
-              slug: p.community?.slug || resolvedParams.slug,
-            },
-            tags: p.tags || [],
-            mediaUrl: p.media?.[0]?.url || undefined,
-            comments: [],
-          }));
-          setCommunityPosts(mapped);
+        if (isMounted && postsRes.ok && postsData.success && Array.isArray(postsData.data?.items)) {
+          setCommunityPosts(postsData.data.items);
         }
       } catch {
         // Fallback gracefully
@@ -139,38 +99,21 @@ export default function CommunityDetailPage({
     return () => {
       isMounted = false;
     };
-  }, [resolvedParams.slug]);
+  }, [resolvedParams.slug, token]);
 
   // Derive actual showcase projects dynamically from community posts
   const showcaseProjects = communityPosts.filter((p) =>
-    Boolean(p.mediaUrl || p.tags?.some((t) => t.toLowerCase().includes("showcase") || t.toLowerCase().includes("project")))
+    Boolean((p.media && p.media.length > 0) || p.tags?.some((t) => t.toLowerCase().includes("showcase") || t.toLowerCase().includes("project")))
   );
 
   // Derive unique community members from active discussion authors
   const members = Array.from(
     new Map(
       communityPosts
-        .filter((p): p is FeedPost & { author: NonNullable<FeedPost["author"]> } => Boolean(p.author))
+        .filter((p) => Boolean(p.author))
         .map((p) => [p.author.id, p.author])
     ).values()
   );
-
-  const toggleFollowMember = (id: string) => {
-    setCommunityPosts((prev) =>
-      prev.map((p) => {
-        if (p.author?.id === id) {
-          return {
-            ...p,
-            author: {
-              ...p.author,
-              isFollowing: !p.author.isFollowing,
-            },
-          };
-        }
-        return p;
-      })
-    );
-  };
 
   const toggleJoin = async () => {
     const wasMember = community.isMember;
@@ -183,9 +126,9 @@ export default function CommunityDetailPage({
     }));
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null;
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null);
       const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
       await fetch(`/api/v1/communities/${resolvedParams.slug}/join`, {
         method: wasMember ? "DELETE" : "POST",
@@ -196,33 +139,28 @@ export default function CommunityDetailPage({
     }
   };
 
-  const handleCreatePost = (newPost: FeedPost) => {
-    setCommunityPosts([
-      {
-        ...newPost,
-        community: {
-          id: community.id,
-          name: community.name,
-          slug: community.slug,
-        },
-      },
-      ...communityPosts,
-    ]);
+  const handleCreatePost = (newPost: PostResponse) => {
+    setCommunityPosts((prev) => [newPost, ...prev]);
   };
 
-  const handleLikePost = (postId: string) => {
-    setCommunityPosts((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            isLiked: !p.isLiked,
-            likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1,
-          };
-        }
-        return p;
-      })
-    );
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+
+  const toggleFollowMember = async (targetUserId: string) => {
+    const isCurrentlyFollowing = Boolean(followingMap[targetUserId]);
+    setFollowingMap((prev) => ({ ...prev, [targetUserId]: !isCurrentlyFollowing }));
+
+    try {
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null);
+      const headers: Record<string, string> = {};
+      if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
+
+      await fetch(`/api/v1/users/${targetUserId}/follow`, {
+        method: isCurrentlyFollowing ? "DELETE" : "POST",
+        headers,
+      });
+    } catch {
+      setFollowingMap((prev) => ({ ...prev, [targetUserId]: isCurrentlyFollowing }));
+    }
   };
 
   const handleShareLink = () => {
@@ -427,13 +365,13 @@ export default function CommunityDetailPage({
             {activeTab === "discussions" && (
               <div className="space-y-6">
                 {/* Post Composer for Community */}
-                <div className="bg-[#2B2D31] rounded-2xl p-5 border border-white/10 shadow-lg">
-                  <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-[#8A9BFF]">
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Post directly into c/{community.slug}</span>
-                  </div>
-                  <PostComposer onPostCreated={handleCreatePost} />
-                </div>
+                {community.isMember && (
+                  <PostComposer
+                    communityId={community.id}
+                    placeholder={`Start a discussion or share a project in c/${community.slug}...`}
+                    onPostCreated={handleCreatePost}
+                  />
+                )}
 
                 {/* Posts stream */}
                 <div className="space-y-4">
@@ -452,22 +390,8 @@ export default function CommunityDetailPage({
                       <PostCard
                         key={post.id}
                         post={post}
-                        onLikeToggle={handleLikePost}
-                        onBookmarkToggle={() => {}}
-                        onAddComment={(postId, comment) => {
-                          setCommunityPosts((prev) =>
-                            prev.map((p) => {
-                              if (p.id === postId) {
-                                return {
-                                  ...p,
-                                  commentsCount: p.commentsCount + 1,
-                                  comments: [...(p.comments || []), comment],
-                                };
-                              }
-                              return p;
-                            })
-                          );
-                        }}
+                        currentUserId={user?.id}
+                        token={token}
                       />
                     ))
                   )}
@@ -495,9 +419,9 @@ export default function CommunityDetailPage({
                       className="bg-[#2B2D31] rounded-2xl border border-white/10 overflow-hidden shadow-xs hover:border-[#5865F2] transition group"
                     >
                       <div className="h-44 w-full overflow-hidden bg-[#1E1F22] relative">
-                        {item.mediaUrl ? (
+                        {item.media?.[0]?.url ? (
                           <img
-                            src={item.mediaUrl}
+                            src={item.media[0].url}
                             alt={item.content.slice(0, 40)}
                             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                           />
@@ -513,7 +437,7 @@ export default function CommunityDetailPage({
                       <div className="p-5">
                         <div className="flex items-center justify-between text-xs text-[#B5BAC1] mb-1">
                           <span className="font-mono text-[#8A9BFF] font-medium">
-                            @{item.author?.username || item.authorUsername || "member"}
+                            @{item.author?.username || "member"}
                           </span>
                         </div>
                         <p className="text-sm font-bold text-white group-hover:text-[#8A9BFF] transition line-clamp-2">
@@ -634,21 +558,23 @@ export default function CommunityDetailPage({
                             </span>
                           </div>
                           <p className="text-xs text-[#B5BAC1]">
-                            @{mem.username} &bull; {mem.role || "Contributor"}
+                            @{mem.username} &bull; {mem.headline || "Contributor"}
                           </p>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => toggleFollowMember(mem.id)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 ${
-                          mem.isFollowing
-                            ? "bg-[#1E1F22] text-[#B5BAC1] hover:bg-[#383A40]"
-                            : "bg-[#5865F2] text-white hover:bg-[#4752C4]"
-                        }`}
-                      >
-                        {mem.isFollowing ? "Following" : "Follow"}
-                      </button>
+                      {user?.id !== mem.id && (
+                        <button
+                          onClick={() => toggleFollowMember(mem.id)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition active:scale-95 ${
+                            followingMap[mem.id]
+                              ? "bg-[#1E1F22] text-[#B5BAC1] hover:bg-[#383A40]"
+                              : "bg-[#5865F2] text-white hover:bg-[#4752C4]"
+                          }`}
+                        >
+                          {followingMap[mem.id] ? "Following" : "Follow"}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

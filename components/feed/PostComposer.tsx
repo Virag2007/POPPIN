@@ -115,37 +115,61 @@ export function PostComposer({ onPostCreated }: PostComposerProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || isUploading) return;
 
     setIsPosting(true);
 
-    setTimeout(() => {
-      const newPost: FeedPost = {
-        id: "post_" + Date.now(),
-        authorId: user.id,
-        authorName: profile?.displayName || profile?.username || "You",
-        authorUsername: profile?.username || "you",
-        authorAvatar: profile?.avatar || null,
-        authorHeadline: profile?.headline || null,
-        content: content.trim(),
-        mediaUrl: imageUrl.trim() || null,
-        tags: selectedTags,
-        likesCount: 0,
-        commentsCount: 0,
-        isLiked: false,
-        isBookmarked: false,
-        comments: [],
-        createdAt: "Just now",
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") || localStorage.getItem("poppin_token") : null;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
       };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      onPostCreated(newPost);
-      setContent("");
-      setImageUrl("");
-      setSelectedTags([]);
+      const res = await fetch("/api/v1/posts", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          content: content.trim(),
+          type: "UPDATE",
+          tags: selectedTags,
+          media: imageUrl ? [{ url: imageUrl, order: 0 }] : [],
+        }),
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success && json.data) {
+        const created = json.data;
+        const newPost: FeedPost = {
+          id: created.id,
+          authorId: user.id,
+          authorName: profile?.displayName || profile?.username || "You",
+          authorUsername: profile?.username || "you",
+          authorAvatar: profile?.avatar || null,
+          authorHeadline: profile?.headline || null,
+          content: created.content,
+          mediaUrl: created.media?.[0]?.url || null,
+          tags: created.tags || [],
+          likesCount: 0,
+          commentsCount: 0,
+          isLiked: false,
+          isBookmarked: false,
+          comments: [],
+          createdAt: "Just now",
+        };
+
+        onPostCreated(newPost);
+        setContent("");
+        setImageUrl("");
+        setSelectedTags([]);
+      }
+    } catch (err) {
+      console.error("Failed to persist post:", err);
+    } finally {
       setIsPosting(false);
-    }, 200);
+    }
   };
 
   return (

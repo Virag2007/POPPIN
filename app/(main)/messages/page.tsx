@@ -77,6 +77,33 @@ function MessagesContent() {
     loadConversations();
   }, [loadConversations]);
 
+  // Periodic background refresh for conversation sidebar list & unread badges
+  const refreshConversations = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/v1/conversations", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.data)) {
+        setConversations(data.data);
+      }
+    } catch {
+      // Background silent refresh
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(refreshConversations, 4000);
+    const onFocus = () => refreshConversations();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [token, refreshConversations]);
+
   const filteredConversations = conversations.filter((c) => {
     const q = searchQuery.toLowerCase();
     const otherMember = c.members.find((m) => m.userId !== user?.id);

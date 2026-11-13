@@ -5,6 +5,8 @@ import { prisma } from "./lib/prisma";
 import { createSocketServer } from "./socket";
 
 async function bootstrap() {
+  let ioInstance: any = null;
+
   const server = http.createServer((req, res) => {
     // Health check endpoint for Railway / load balancers
     if (req.url === "/health" || req.url === "/") {
@@ -24,11 +26,41 @@ async function bootstrap() {
       return;
     }
 
+    // HTTP /broadcast bridge endpoint for internal Next.js REST API events
+    if (req.method === "POST" && req.url === "/broadcast") {
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk;
+      });
+      req.on("end", () => {
+        try {
+          const { room, event, payload } = JSON.parse(body);
+          if (ioInstance) {
+            if (room) {
+              ioInstance.to(room).emit(event, payload);
+              if (!room.startsWith("conversation:") && !room.startsWith("user:")) {
+                ioInstance.to(`conversation:${room}`).emit(event, payload);
+              }
+            } else {
+              ioInstance.emit(event, payload);
+            }
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true }));
+        } catch {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid JSON payload" }));
+        }
+      });
+      return;
+    }
+
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Not Found" }));
   });
 
   const io = await createSocketServer(server);
+  ioInstance = io;
 
   server.listen(env.PORT, env.HOST, () => {
     Logger.info(`🚀 POPPIN Real-Time Server running on http://${env.HOST}:${env.PORT}`);

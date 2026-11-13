@@ -185,6 +185,38 @@ export class MessagingService {
     };
   }
 
+  static async syncMessages(
+    conversationId: string,
+    userId: string,
+    sinceRaw?: string
+  ) {
+    const isMember = await MessagingRepository.isMember(conversationId, userId);
+    if (!isMember) {
+      throw new AppError("You are not a member of this conversation", 403, "NOT_CONVERSATION_MEMBER");
+    }
+
+    let sinceDate = new Date(0);
+    if (sinceRaw) {
+      const parsed = new Date(sinceRaw);
+      if (!isNaN(parsed.getTime())) {
+        sinceDate = parsed;
+      }
+    }
+
+    const messages = await MessagingRepository.getMessagesSince(conversationId, sinceDate);
+    const items = messages.map(MessagingService.mapMessageToResponse);
+
+    // If new messages exist from other users, mark conversation as read
+    if (items.some((m) => m.senderId !== userId)) {
+      await MessagingRepository.markAsRead(conversationId, userId).catch(() => {});
+    }
+
+    return {
+      messages: items,
+      latestTimestamp: items.length > 0 ? items[items.length - 1].createdAt : sinceDate.toISOString(),
+    };
+  }
+
   static async sendMessage(
     conversationId: string,
     senderId: string,

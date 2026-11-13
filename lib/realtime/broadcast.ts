@@ -10,23 +10,65 @@ class RealtimeBroadcaster extends EventEmitter {
     this.emit(`room:${room}`, { event, payload });
 
     // Also deliver to local socketClient simulation in dev/test
-    socketClient._dispatchServerEvent(event, payload);
+    try {
+      socketClient._dispatchServerEvent(event, payload);
+    } catch {
+      // Ignore
+    }
 
-    // Forward to WebSocket server on port 3001 if active
+    // Forward to WebSocket server on port 4000 if active (non-blocking with 150ms timeout)
     if (typeof fetch !== "undefined") {
-      fetch("http://localhost:3001/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room, event, payload }),
-      }).catch(() => {
-        // Silently continue if standalone ws server is not active
-      });
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 150);
+        const url = process.env.INTERNAL_SOCKET_URL || "http://127.0.0.1:4000/broadcast";
+
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ room, event, payload }),
+          signal: controller.signal,
+        })
+          .catch(() => {
+            // Silently continue if standalone ws server is not active
+          })
+          .finally(() => {
+            clearTimeout(timeoutId);
+          });
+      } catch {
+        // Silently continue
+      }
     }
   }
 
   broadcastToUser<T>(userId: string, event: RealtimeServerEvent, payload: T): void {
     this.emit(`user:${userId}`, { event, payload });
-    socketClient._dispatchServerEvent(event, payload);
+    try {
+      socketClient._dispatchServerEvent(event, payload);
+    } catch {
+      // Ignore
+    }
+
+    if (typeof fetch !== "undefined") {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 150);
+        const url = process.env.INTERNAL_SOCKET_URL || "http://127.0.0.1:4000/broadcast";
+
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ room: `user:${userId}`, event, payload }),
+          signal: controller.signal,
+        })
+          .catch(() => {})
+          .finally(() => {
+            clearTimeout(timeoutId);
+          });
+      } catch {
+        // Silently continue
+      }
+    }
   }
 }
 

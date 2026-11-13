@@ -297,6 +297,31 @@ export class MessagingRepository {
     };
   }
 
+  static async getMessagesSince(conversationId: string, sinceDate: Date, limit = 50) {
+    return prisma.message.findMany({
+      where: {
+        conversationId,
+        createdAt: { gt: sinceDate },
+      },
+      take: limit,
+      orderBy: { createdAt: "asc" },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            profile: {
+              select: {
+                username: true,
+                displayName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   static async getUnreadCount(conversationId: string, userId: string): Promise<number> {
     const member = await prisma.conversationMember.findUnique({
       where: {

@@ -140,6 +140,12 @@ export default function OwnProfilePage() {
       const data = await res.json();
       if (res.ok && data.success && data.data) {
         setProfileData(data.data);
+        setDisplayName(data.data.displayName || "");
+        setHeadline(data.data.headline || "");
+        setBio(data.data.bio || "");
+        setLocation(data.data.location || "");
+        setAvatar(data.data.avatar || "");
+        setCoverImage(data.data.coverImage || "");
         updateProfileState(data.data);
         setSaveSuccess(true);
         setTimeout(() => {

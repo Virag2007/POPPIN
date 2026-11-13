@@ -86,10 +86,60 @@ export class ProfileService {
     return formatProfileResponse(created, counts, privacy);
   }
 
+  static async ensureProfileExists(userId: string) {
+    const existing = await ProfileRepository.findByUserId(userId);
+    if (existing) return existing;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new AppError("User not found", 404, "USER_NOT_FOUND");
+    }
+
+    // Determine a clean base handle from email prefix
+    let base = (user.email.split("@")[0] || "user")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "");
+    if (base.length < 3) base = `user_${base}`;
+    if (base.length > 20) base = base.slice(0, 20);
+
+    let candidate = base;
+    let counter = 1;
+    while (!(await ProfileRepository.isUsernameAvailable(candidate))) {
+      candidate = `${base}_${counter}`;
+      counter++;
+    }
+
+    const displayName = base.charAt(0).toUpperCase() + base.slice(1);
+
+    try {
+      return await prisma.profile.create({
+        data: {
+          userId,
+          username: candidate,
+          displayName,
+          headline: "Member of POPPIN",
+          skills: "[]",
+          interests: "[]",
+          links: "[]",
+          education: "[]",
+          experience: "[]",
+        },
+      });
+    } catch {
+      const found = await ProfileRepository.findByUserId(userId);
+      if (found) return found;
+      throw new AppError("Failed to initialize user profile", 500, "PROFILE_CREATION_FAILED");
+    }
+  }
+
   static async getOwnProfile(userId: string) {
-    const profile = await ProfileRepository.findByUserId(userId);
+    let profile = await ProfileRepository.findByUserId(userId);
     if (!profile) {
-      throw new AppError("Profile not found. Please create your profile first.", 404, "PROFILE_NOT_FOUND");
+      profile = await ProfileService.ensureProfileExists(userId);
     }
 
     const counts = await ProfileRepository.getFollowerAndFollowingCounts(userId);
@@ -98,9 +148,9 @@ export class ProfileService {
   }
 
   static async updateOwnProfile(userId: string, input: UpdateProfileInput) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const updated = await ProfileRepository.update(userId, input);
@@ -167,9 +217,9 @@ export class ProfileService {
   }
 
   static async updateSkills(userId: string, skills: string[]) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const updated = await ProfileRepository.updateSkills(userId, skills);
@@ -179,9 +229,9 @@ export class ProfileService {
   }
 
   static async updateInterests(userId: string, interests: string[]) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const updated = await ProfileRepository.updateInterests(userId, interests);
@@ -191,9 +241,9 @@ export class ProfileService {
   }
 
   static async updateLinks(userId: string, links: any[]) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const updated = await ProfileRepository.updateLinks(userId, links);
@@ -203,9 +253,9 @@ export class ProfileService {
   }
 
   static async updateEducation(userId: string, education: any[]) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const items = education.map((item) => ({
@@ -225,9 +275,9 @@ export class ProfileService {
   }
 
   static async updateExperience(userId: string, experience: any[]) {
-    const existing = await ProfileRepository.findByUserId(userId);
+    let existing = await ProfileRepository.findByUserId(userId);
     if (!existing) {
-      throw new AppError("Profile not found", 404, "PROFILE_NOT_FOUND");
+      existing = await ProfileService.ensureProfileExists(userId);
     }
 
     const items = experience.map((item) => ({

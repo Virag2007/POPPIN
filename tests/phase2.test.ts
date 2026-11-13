@@ -247,6 +247,36 @@ export async function runPhase2Tests() {
   });
   assert.strictEqual(notFoundRes.status, 404);
 
+  // 15. Testing auto-provisioning profile on PATCH when profile record was missing
+  console.log("15. Testing auto-provisioning profile on PATCH when profile was missing...");
+  const autoEmail = `test_noprofile_${Date.now()}@poppin.social`;
+  const newUser = await prisma.user.create({
+    data: {
+      email: autoEmail,
+      passwordHash: "hash123",
+      isEmailVerified: true,
+    },
+  });
+  const newJwt = signToken({ userId: newUser.id, email: newUser.email, tokenVersion: newUser.tokenVersion });
+
+  const patchAutoReq = createJsonRequest(
+    "/api/v1/users/me/profile",
+    "PATCH",
+    {
+      displayName: "Self Healed User",
+      headline: "Auto-provisioned Profile",
+    },
+    newJwt
+  );
+  const patchAutoRes = await updateProfileHandler(patchAutoReq);
+  const patchAutoData = await patchAutoRes.json();
+  assert.strictEqual(patchAutoRes.status, 200, "Should auto-provision and return 200");
+  assert.strictEqual(patchAutoData.data.displayName, "Self Healed User");
+  assert.strictEqual(patchAutoData.data.headline, "Auto-provisioned Profile");
+
+  // Clean up
+  await prisma.user.delete({ where: { id: newUser.id } });
+
   console.log(">>> Phase 2 Tests Passed Successfully! <<<\n");
 }
 

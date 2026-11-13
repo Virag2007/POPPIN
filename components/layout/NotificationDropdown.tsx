@@ -86,7 +86,7 @@ export function NotificationDropdown() {
       if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
       await fetch("/api/v1/notifications/read-all", {
-        method: "POST",
+        method: "PATCH",
         headers,
       });
 

@@ -1,9 +1,11 @@
 import React from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ChatWindow } from "@/components/messaging/chat-window";
 import { AppError } from "@/lib/http/response";
+import { verifyToken } from "@/lib/auth/jwt";
 
 interface MessageConversationPageProps {
   params: Promise<{ conversationId: string }>;
@@ -15,8 +17,18 @@ export default async function MessageConversationPage({
   const { conversationId } = await params;
 
   try {
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const token = (await cookies()).get("poppin_token")?.value;
+    const payload = token ? verifyToken(token) : null;
+    if (!payload?.userId) {
+      notFound();
+    }
+
+    // Only conversation members may view the conversation (and its member list).
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        members: { some: { userId: payload.userId } },
+      },
       include: {
         members: {
           include: {
@@ -78,7 +90,7 @@ export default async function MessageConversationPage({
             </Link>
           </div>
 
-          <ChatWindow conversation={formattedConversation} />
+          <ChatWindow conversation={formattedConversation} currentUserId={payload.userId} />
         </div>
       </main>
     );

@@ -246,7 +246,7 @@ export function useMessages(conversationId: string | null) {
         socket.emit("message:read", { conversationId, messageId });
       }
       // Also update backend marker via REST
-      fetch(`/api/v1/conversations/${conversationId}/read`, { method: "PATCH" }).catch(() => {});
+      fetch(`/api/v1/conversations/${conversationId}/read`, { method: "POST" }).catch(() => {});
     },
     [conversationId, socket, isConnected]
   );

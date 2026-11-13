@@ -16,16 +16,9 @@ export async function POST(request: NextRequest) {
 
     const result = await AuthService.register(validated);
 
-    const response = successResponse(result, 201, "User registered successfully");
-    response.cookies.set("poppin_token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    return response;
+    // No session cookie is set here: the account must verify its email address
+    // first. The verify-email endpoint issues the session token.
+    return successResponse(result, 201, "User registered successfully");
   } catch (error) {
     return handleRouteError(error);
   }

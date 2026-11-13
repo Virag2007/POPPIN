@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  isEmailVerified: boolean;
   tokenVersion: number;
   createdAt: Date;
   updatedAt: Date;
@@ -71,6 +72,7 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
     select: {
       id: true,
       email: true,
+      isEmailVerified: true,
       tokenVersion: true,
       createdAt: true,
       updatedAt: true,
@@ -79,6 +81,14 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
 
   if (!user) {
     throw new AppError("Authenticated user no longer exists", 401, "USER_NOT_FOUND");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new AppError(
+      "Please verify your email address before accessing this resource",
+      403,
+      "EMAIL_NOT_VERIFIED"
+    );
   }
 
   // Token revocation verification (e.g. password changed or logged out everywhere)

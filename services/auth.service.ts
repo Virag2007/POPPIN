@@ -68,11 +68,9 @@ export class AuthService {
       return newUser;
     });
 
-    const token = signToken({
-      userId: user.id,
-      email: user.email,
-      tokenVersion: user.tokenVersion,
-    });
+    // Do not issue an authenticated session until the email address is verified.
+    // Returning a token here would let an unverified account bypass the login gate.
+    const isProduction = process.env.NODE_ENV === "production";
 
     return {
       user: {
@@ -83,8 +81,9 @@ export class AuthService {
         updatedAt: user.updatedAt,
         profile: user.profile,
       },
-      token,
-      verificationCode,
+      // Email delivery is not wired up yet. Expose the code only outside production
+      // so a real mailer can be plugged in without leaking verification codes.
+      ...(isProduction ? {} : { verificationCode }),
       requiresVerification: true,
     };
   }
@@ -189,9 +188,11 @@ export class AuthService {
       },
     });
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     return {
       message: "New verification code generated",
-      verificationCode: code,
+      ...(isProduction ? {} : { verificationCode: code }),
       requiresVerification: true,
     };
   }

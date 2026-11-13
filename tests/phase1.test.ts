@@ -4,6 +4,7 @@ import { prisma } from "../lib/db";
 import { AuthService } from "../services/auth.service";
 import { checkOwnership } from "../lib/auth/middleware";
 import { POST as registerHandler } from "../app/api/v1/auth/register/route";
+import { POST as verifyEmailHandler } from "../app/api/v1/auth/verify-email/route";
 import { POST as loginHandler } from "../app/api/v1/auth/login/route";
 import { GET as meHandler } from "../app/api/v1/auth/me/route";
 import { GET as googleHandler } from "../app/api/v1/auth/google/route";
@@ -65,7 +66,21 @@ export async function runPhase1Tests() {
   assert.strictEqual(regRes.status, 201, "Registration should return 201");
   assert.strictEqual(regData.success, true);
   assert.strictEqual(regData.data.user.email, "alice@example.com");
-  assert.ok(regData.data.token, "Token should be present");
+  assert.strictEqual(regData.data.token, undefined, "Registration must not issue a session before email verification");
+  assert.strictEqual(regData.data.requiresVerification, true);
+  assert.ok(regData.data.verificationCode, "Dev/test verification code should be present");
+
+  // Verify email to obtain an authenticated session
+  const verifyRes = await verifyEmailHandler(
+    createJsonRequest("/api/v1/auth/verify-email", "POST", {
+      email: "alice@example.com",
+      token: regData.data.verificationCode,
+    })
+  );
+  const verifyData = await verifyRes.json();
+  assert.strictEqual(verifyRes.status, 200, "Email verification should succeed");
+  assert.ok(verifyData.data.token, "Verification should issue a JWT token");
+  assert.strictEqual(verifyData.data.user.isEmailVerified, true);
 
   // Verify bcrypt password hash in database (never plain text)
   const dbUser = await prisma.user.findUnique({ where: { email: "alice@example.com" } });

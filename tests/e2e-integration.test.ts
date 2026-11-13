@@ -2,6 +2,7 @@ import assert from "node:assert";
 import { NextRequest } from "next/server";
 import { prisma } from "../lib/db";
 import { POST as registerHandler } from "../app/api/v1/auth/register/route";
+import { POST as verifyEmailHandler } from "../app/api/v1/auth/verify-email/route";
 import { POST as loginHandler } from "../app/api/v1/auth/login/route";
 import { GET as checkUsernameHandler } from "../app/api/v1/usernames/availability/route";
 import { POST as createProfileHandler, GET as getProfileHandler, PATCH as updateProfileHandler } from "../app/api/v1/users/me/profile/route";
@@ -85,7 +86,15 @@ export async function runE2EIntegrationTests() {
   );
   const regAliceData = await regAliceRes.json();
   assert.strictEqual(regAliceRes.status, 201);
-  const aliceToken = regAliceData.data.token;
+  const aliceVerifyRes = await verifyEmailHandler(
+    createJsonRequest("/api/v1/auth/verify-email", "POST", {
+      email: "e2e_alice@poppin.io",
+      token: regAliceData.data.verificationCode,
+    })
+  );
+  const aliceVerifyData = await aliceVerifyRes.json();
+  assert.strictEqual(aliceVerifyRes.status, 200, "Alice must verify her email");
+  const aliceToken = aliceVerifyData.data.token;
   const aliceId = regAliceData.data.user.id;
 
   // Step 2: Register Bob
@@ -98,7 +107,15 @@ export async function runE2EIntegrationTests() {
   );
   const regBobData = await regBobRes.json();
   assert.strictEqual(regBobRes.status, 201);
-  const bobToken = regBobData.data.token;
+  const bobVerifyRes = await verifyEmailHandler(
+    createJsonRequest("/api/v1/auth/verify-email", "POST", {
+      email: "e2e_bob@poppin.io",
+      token: regBobData.data.verificationCode,
+    })
+  );
+  const bobVerifyData = await bobVerifyRes.json();
+  assert.strictEqual(bobVerifyRes.status, 200, "Bob must verify his email");
+  const bobToken = bobVerifyData.data.token;
   const bobId = regBobData.data.user.id;
 
   // Step 3: Alice creates her profile

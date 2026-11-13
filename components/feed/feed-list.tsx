@@ -5,6 +5,7 @@ import { PostResponse } from "@/types";
 import { PostCard } from "@/components/posts/post-card";
 import { PostEditModal } from "@/components/posts/post-edit-modal";
 import { FeedType } from "./feed-tabs";
+import { MessageSquare } from "lucide-react";
 
 interface FeedListProps {
   feedType: FeedType;
@@ -75,8 +76,8 @@ export function FeedList({ feedType, currentUserId, token, newPost }: FeedListPr
       } catch (err: unknown) {
         setErrorMessage(err instanceof Error ? err.message : "Failed to load feed");
       } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        if (isInitial) setIsLoading(false);
+        else setIsLoadingMore(false);
       }
     },
     [feedType, token]
@@ -86,65 +87,62 @@ export function FeedList({ feedType, currentUserId, token, newPost }: FeedListPr
     loadFeed(true);
   }, [loadFeed]);
 
+  const handlePostUpdated = (updated: PostResponse) => {
+    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setEditingPost(null);
+  };
+
   const handleDeletePost = (postId: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
-  const handlePostUpdated = (updated: PostResponse) => {
-    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-  };
-
   return (
-    <div>
-      {/* Loading Skeleton */}
+    <div className="w-full">
       {isLoading ? (
         <div className="flex flex-col gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm animate-pulse">
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="bg-[#2B2D31] rounded-2xl border border-white/10 p-6 animate-pulse"
+            >
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-200" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 bg-gray-200 rounded w-1/4" />
-                  <div className="h-3 bg-gray-200 rounded w-1/6" />
+                <div className="w-10 h-10 rounded-xl bg-white/10" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="w-32 h-3 bg-white/10 rounded" />
+                  <div className="w-20 h-2 bg-white/5 rounded" />
                 </div>
               </div>
               <div className="space-y-2 mb-4">
-                <div className="h-3.5 bg-gray-200 rounded w-full" />
-                <div className="h-3.5 bg-gray-200 rounded w-5/6" />
+                <div className="w-full h-3 bg-white/10 rounded" />
+                <div className="w-4/5 h-3 bg-white/10 rounded" />
               </div>
+              <div className="w-24 h-6 bg-white/5 rounded-lg" />
             </div>
           ))}
         </div>
       ) : errorMessage ? (
-        <div className="bg-white rounded-xl border border-red-200 p-6 text-center shadow-sm">
-          <p className="text-xs text-red-600 mb-3">{errorMessage}</p>
+        <div className="bg-[#2B2D31] rounded-2xl border border-white/10 p-8 text-center shadow-lg">
+          <p className="text-xs text-red-400 mb-3">{errorMessage}</p>
           <button
             type="button"
             onClick={() => loadFeed(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
+            className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-xl text-xs font-semibold transition"
           >
             Retry
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-              />
-            </svg>
+        <div className="bg-[#2B2D31] rounded-2xl border border-white/10 p-12 text-center shadow-lg">
+          <div className="w-12 h-12 rounded-xl bg-[#383A40] text-[#5865F2] flex items-center justify-center mx-auto mb-3 border border-white/10">
+            <MessageSquare className="w-6 h-6" />
           </div>
-          <h3 className="font-semibold text-gray-900 text-sm mb-1">
+          <h3 className="font-semibold text-[#F2F3F5] text-sm mb-1 font-heading">
             {feedType === "following" ? "No posts in your Following feed" : "No posts found"}
           </h3>
-          <p className="text-xs text-gray-500 max-w-sm mx-auto">
+          <p className="text-xs text-[#B5BAC1] max-w-sm mx-auto leading-relaxed">
             {feedType === "following"
-              ? "Follow other creators to see their updates and project showcases here."
-              : "Check back later or be the first to publish a post!"}
+              ? "Follow other members on POPPIN to see their updates and project showcases here."
+              : "Check back later or be the first to publish a post in the community!"}
           </p>
         </div>
       ) : (
@@ -167,7 +165,7 @@ export function FeedList({ feedType, currentUserId, token, newPost }: FeedListPr
                 type="button"
                 onClick={() => loadFeed(false, cursor)}
                 disabled={isLoadingMore}
-                className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50 inline-flex items-center gap-2"
+                className="px-5 py-2.5 bg-[#2B2D31] border border-white/10 rounded-xl text-xs font-semibold text-[#F2F3F5] hover:bg-[#383A40] shadow-sm disabled:opacity-50 inline-flex items-center gap-2 transition"
               >
                 {isLoadingMore ? "Loading more posts..." : "Load More Posts"}
               </button>
@@ -189,4 +187,3 @@ export function FeedList({ feedType, currentUserId, token, newPost }: FeedListPr
     </div>
   );
 }
-

@@ -41,6 +41,7 @@ export const createPostSchema = z.object({
     .min(1, "Post content cannot be empty")
     .max(5000, "Post content cannot exceed 5000 characters"),
   type: postTypeEnum,
+  communityId: z.string().trim().optional(),
   links: z.array(postLinkItemSchema).max(10, "Cannot include more than 10 links").optional().default([]),
   tags: z
     .array(

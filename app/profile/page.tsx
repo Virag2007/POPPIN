@@ -4,8 +4,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { SafeProfile, EducationItem, ExperienceItem } from "@/types";
-import { FileUpload } from "@/components/ui/file-upload";
+import { SafeProfile, EducationItem, ExperienceItem, PostResponse } from "@/types";
+import { PostCard } from "@/components/posts/post-card";
+import { FollowersFollowingModal } from "@/components/profile/followers-following-modal";
 import {
   MapPin,
   Briefcase,
@@ -21,18 +22,20 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-interface ConnectionItem {
-  id: string;
-  username: string;
-  displayName?: string | null;
-  avatar?: string | null;
-}
-
 export default function OwnProfilePage() {
   const { user, token, updateProfileState } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState<SafeProfile | null>(null);
+
+  // Tabs: Posts vs About
+  const [activeTab, setActiveTab] = useState<"posts" | "about">("posts");
+  const [posts, setPosts] = useState<PostResponse[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
+
+  // Followers & Following Modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<"followers" | "following" | "requests">("followers");
 
   // Edit Profile Details Modal
   const [showEditModal, setShowEditModal] = useState(false);
@@ -65,107 +68,100 @@ export default function OwnProfilePage() {
   const [expEnd, setExpEnd] = useState("");
   const [expDesc, setExpDesc] = useState("");
 
-  // Followers / Following dialog
-  const [connectionsModal, setConnectionsModal] = useState<"followers" | "following" | null>(null);
-  const [connectionsList, setConnectionsList] = useState<ConnectionItem[]>([]);
-  const [connectionsLoading, setConnectionsLoading] = useState(false);
-
-  // Fetch full profile
   const fetchMyProfile = useCallback(async () => {
     if (!token) return;
     try {
+      setLoading(true);
       const res = await fetch("/api/v1/users/me/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success && data.data) {
         setProfileData(data.data);
-        updateProfileState(data.data);
         setDisplayName(data.data.displayName || "");
         setHeadline(data.data.headline || "");
         setBio(data.data.bio || "");
         setLocation(data.data.location || "");
         setAvatar(data.data.avatar || "");
         setCoverImage(data.data.coverImage || "");
+
+        // Also fetch authored posts
+        setLoadingPosts(true);
+        try {
+          const postsRes = await fetch(`/api/v1/posts?authorId=${data.data.userId}&limit=20`);
+          const postsData = await postsRes.json();
+          if (postsRes.ok && postsData.success) {
+            setPosts(postsData.data?.items || []);
+          }
+        } catch {
+          // Handled silently
+        } finally {
+          setLoadingPosts(false);
+        }
       }
     } catch {
       // Ignore
     } finally {
       setLoading(false);
     }
-  }, [token, updateProfileState]);
+  }, [token]);
 
   useEffect(() => {
     fetchMyProfile();
   }, [fetchMyProfile]);
 
-  // Load followers/following list
-  const loadConnections = async (type: "followers" | "following") => {
-    setConnectionsModal(type);
-    setConnectionsLoading(true);
-    try {
-      const res = await fetch(`/api/v1/users/me/${type}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setConnectionsList(data.data);
-      }
-    } catch {
-      setConnectionsList([]);
-    } finally {
-      setConnectionsLoading(false);
-    }
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     setIsSaving(true);
+    setSaveSuccess(false);
+
     try {
       const res = await fetch("/api/v1/users/me/profile", {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          displayName: displayName.trim(),
-          headline: headline.trim(),
-          bio: bio.trim(),
-          location: location.trim(),
-          avatar: avatar.trim(),
-          coverImage: coverImage.trim(),
+          displayName: displayName.trim() || undefined,
+          headline: headline.trim() || undefined,
+          bio: bio.trim() || undefined,
+          location: location.trim() || undefined,
+          avatar: avatar.trim() || undefined,
+          coverImage: coverImage.trim() || undefined,
         }),
       });
+
       const data = await res.json();
-      if (data.success) {
-        await fetchMyProfile();
+      if (data.success && data.data) {
+        setProfileData(data.data);
+        updateProfileState(data.data);
         setSaveSuccess(true);
         setTimeout(() => {
-          setSaveSuccess(false);
           setShowEditModal(false);
+          setSaveSuccess(false);
         }, 800);
       } else {
-        alert(data.error?.message || "Failed to update profile.");
+        alert(data.error?.message || "Failed to update profile");
       }
     } catch {
-      alert("Error updating profile.");
+      alert("Error saving profile");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Add Link
   const handleAddLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newLinkTitle || !newLinkUrl || !profileData) return;
 
-    let urlToSave = newLinkUrl.trim();
-    if (!urlToSave.startsWith("http://") && !urlToSave.startsWith("https://")) {
-      urlToSave = "https://" + urlToSave;
+    let normalizedUrl = newLinkUrl.trim();
+    if (!/^https?:\/\//i.test(normalizedUrl)) {
+      normalizedUrl = `https://${normalizedUrl}`;
     }
 
-    const updatedLinks = [...(profileData.links || []), { title: newLinkTitle.trim(), url: urlToSave }];
+    const updated = [...(profileData.links || []), { title: newLinkTitle.trim(), url: normalizedUrl }];
 
     try {
       const res = await fetch("/api/v1/users/me/profile/links", {
@@ -174,16 +170,13 @@ export default function OwnProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ links: updatedLinks }),
+        body: JSON.stringify({ links: updated }),
       });
-      const data = await res.json();
-      if (data.success) {
+      if (res.ok) {
         await fetchMyProfile();
         setShowLinkModal(false);
         setNewLinkTitle("");
         setNewLinkUrl("");
-      } else {
-        alert(data.error?.message || "Failed to add link.");
       }
     } catch {
       alert("Error saving link.");
@@ -192,31 +185,30 @@ export default function OwnProfilePage() {
 
   const handleDeleteLink = async (index: number) => {
     if (!profileData) return;
-    const updatedLinks = profileData.links.filter((_, i) => i !== index);
+    const updated = profileData.links.filter((_, idx) => idx !== index);
     try {
-      const res = await fetch("/api/v1/users/me/profile/links", {
+      await fetch("/api/v1/users/me/profile/links", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ links: updatedLinks }),
+        body: JSON.stringify({ links: updated }),
       });
-      if (res.ok) await fetchMyProfile();
+      await fetchMyProfile();
     } catch {
       // Ignore
     }
   };
 
-  // Add Education
   const handleAddEducation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eduSchool || !profileData) return;
+    if (!eduSchool || !eduDegree || !profileData) return;
 
     const newItem: EducationItem = {
       id: "edu_" + Date.now(),
       school: eduSchool.trim(),
-      degree: eduDegree.trim() || undefined,
+      degree: eduDegree.trim(),
       fieldOfStudy: eduField.trim() || undefined,
       startDate: eduStart.trim() || undefined,
       endDate: eduEnd.trim() || undefined,
@@ -265,7 +257,6 @@ export default function OwnProfilePage() {
     }
   };
 
-  // Add Experience
   const handleAddExperience = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!expCompany || !expTitle || !profileData) return;
@@ -324,49 +315,41 @@ export default function OwnProfilePage() {
     }
   };
 
-  if (!user && !loading) {
+  if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-xl font-bold text-poppin-navy">Sign in to view your profile</h2>
-        <Link
-          href="/login"
-          className="mt-4 px-6 py-2.5 bg-poppin-navy text-white font-bold rounded-xl text-sm"
-        >
-          Sign In
-        </Link>
+      <div className="flex-1 flex items-center justify-center py-20 text-[#B5BAC1]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#5865F2]" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-      {/* Cover Banner & Profile Header Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden mb-8">
+    <div className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 text-[#F2F3F5]">
+      {/* Profile Header Banner */}
+      <div className="bg-[#2B2D31] rounded-2xl border border-white/10 shadow-lg overflow-hidden mb-8">
         {/* Cover Image */}
-        <div className="h-44 sm:h-64 w-full bg-gradient-to-r from-poppin-navy via-poppin-navy-light to-poppin-lilac relative">
-          {profileData?.coverImage && (
-            <img
-              src={profileData.coverImage}
-              alt="Profile Cover"
-              className="w-full h-full object-cover"
-            />
+        <div className="h-44 sm:h-60 w-full bg-[#1E1F22] relative">
+          {profileData?.coverImage ? (
+            <img src={profileData.coverImage} alt="Profile Cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-[#1E1F22] via-[#2B2D31] to-[#383A40]" />
           )}
           <button
             type="button"
             onClick={() => setShowEditModal(true)}
-            className="absolute top-4 right-4 bg-white/90 backdrop-blur-xs hover:bg-white text-poppin-navy text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+            className="absolute top-4 right-4 bg-[#1E1F22]/80 backdrop-blur-md hover:bg-[#1E1F22] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-md transition flex items-center gap-1.5 border border-white/10"
           >
             <Edit3 className="w-3.5 h-3.5" />
             <span>Edit Profile</span>
           </button>
         </div>
 
-        {/* Profile Info Row */}
+        {/* Profile Info Details */}
         <div className="px-6 sm:px-8 pb-8 pt-0 relative">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-16 sm:-mt-20 mb-6">
             {/* Avatar */}
-            <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-white p-1.5 shadow-md">
-              <div className="w-full h-full rounded-full bg-poppin-lilac-light text-poppin-lilac font-black flex items-center justify-center text-3xl sm:text-4xl overflow-hidden border border-poppin-lilac-border">
+            <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#2B2D31] p-1.5 shadow-xl border-2 border-white/10 shrink-0">
+              <div className="w-full h-full rounded-full bg-[#383A40] text-white font-bold flex items-center justify-center text-3xl sm:text-4xl overflow-hidden font-heading">
                 {profileData?.avatar ? (
                   <img
                     src={profileData.avatar}
@@ -384,17 +367,17 @@ export default function OwnProfilePage() {
               <Link
                 href={`/profiles/${profileData?.username || ""}`}
                 target="_blank"
-                className="min-h-[42px] px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-[#F2F3F5] hover:bg-[#383A40] flex items-center gap-1.5 transition"
               >
                 <span>Public View</span>
-                <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
               </Link>
               <button
                 type="button"
                 onClick={() => setShowEditModal(true)}
-                className="min-h-[42px] px-5 py-2 rounded-xl bg-poppin-navy text-white text-xs font-bold hover:bg-poppin-navy-light flex items-center gap-1.5 shadow-xs"
+                className="px-5 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition"
               >
-                <Edit3 className="w-3.5 h-3.5 text-poppin-lilac" />
+                <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Profile</span>
               </button>
             </div>
@@ -403,377 +386,455 @@ export default function OwnProfilePage() {
           {/* Name & Headline */}
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-poppin-navy tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-heading">
                 {profileData?.displayName || profileData?.username}
               </h1>
               {profileData?.isPrivate && (
-                <span title="Private Account">
-                  <Lock className="w-4 h-4 text-slate-400" />
+                <span
+                  className="p-1 rounded-md bg-[#383A40] text-zinc-400 border border-white/5"
+                  title="Private Account"
+                >
+                  <Lock className="w-3.5 h-3.5" />
                 </span>
               )}
             </div>
-            <p className="text-sm font-bold text-poppin-lilac mt-0.5">@{profileData?.username}</p>
+            <p className="text-sm font-semibold text-[#B5BAC1] font-mono mt-0.5">
+              @{profileData?.username}
+            </p>
 
             {profileData?.headline && (
-              <p className="text-base text-slate-700 mt-2 font-medium max-w-2xl">
+              <p className="text-base text-zinc-200 mt-2 font-medium max-w-2xl font-sans">
                 {profileData.headline}
               </p>
             )}
 
             {profileData?.bio && (
-              <p className="text-sm text-slate-600 mt-3 whitespace-pre-line leading-relaxed max-w-2xl">
+              <p className="text-sm text-[#B5BAC1] mt-3 whitespace-pre-line leading-relaxed max-w-2xl font-sans">
                 {profileData.bio}
               </p>
             )}
 
-            {profileData?.location && (
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-3">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{profileData.location}</span>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-zinc-400 mt-3 font-sans">
+              {profileData?.location && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#5865F2]" />
+                  <span>{profileData.location}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Followers & Following Stats */}
-          <div className="flex items-center gap-6 mt-6 pt-6 border-t border-slate-100">
+          {/* Followers & Following Stats (Instagram-Style Clickable) */}
+          <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10 text-sm">
             <button
               type="button"
-              onClick={() => loadConnections("followers")}
-              className="text-left group"
+              onClick={() => {
+                setModalTab("followers");
+                setModalOpen(true);
+              }}
+              className="text-left group cursor-pointer transition"
             >
-              <span className="text-lg font-black text-poppin-navy group-hover:text-poppin-lilac transition-colors">
+              <span className="text-base font-bold text-white font-mono group-hover:underline">
                 {profileData?.followersCount || 0}
               </span>{" "}
-              <span className="text-xs font-bold text-slate-500">Followers</span>
+              <span className="text-xs text-[#B5BAC1] font-medium">Followers</span>
             </button>
+
             <button
               type="button"
-              onClick={() => loadConnections("following")}
-              className="text-left group"
+              onClick={() => {
+                setModalTab("following");
+                setModalOpen(true);
+              }}
+              className="text-left group cursor-pointer transition"
             >
-              <span className="text-lg font-black text-poppin-navy group-hover:text-poppin-lilac transition-colors">
+              <span className="text-base font-bold text-white font-mono group-hover:underline">
                 {profileData?.followingCount || 0}
               </span>{" "}
-              <span className="text-xs font-bold text-slate-500">Following</span>
+              <span className="text-xs text-[#B5BAC1] font-medium">Following</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Profile Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Left Column: Skills, Interests, Links */}
-        <div className="space-y-6">
-          {/* Skills Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-3">
-              Skills
-            </h3>
-            {profileData?.skills && profileData.skills.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {profileData.skills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="px-3 py-1 bg-poppin-lilac-light text-poppin-navy border border-poppin-lilac-border rounded-full text-xs font-bold"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">No skills added yet.</p>
-            )}
-          </div>
-
-          {/* Interests Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-3">
-              Interests
-            </h3>
-            {profileData?.interests && profileData.interests.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {profileData.interests.map((interest) => (
-                  <span
-                    key={interest}
-                    className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold"
-                  >
-                    {interest}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">No interests added yet.</p>
-            )}
-          </div>
-
-          {/* External Links Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">Links</h3>
-              <button
-                type="button"
-                onClick={() => setShowLinkModal(true)}
-                className="text-xs font-bold text-poppin-lilac hover:text-poppin-lilac-hover flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add</span>
-              </button>
-            </div>
-            {profileData?.links && profileData.links.length > 0 ? (
-              <div className="space-y-2.5">
-                {profileData.links.map((link, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 transition-all text-xs"
-                  >
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-bold text-poppin-navy hover:text-poppin-lilac flex items-center gap-1.5 truncate max-w-[200px]"
-                    >
-                      <LinkIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{link.title}</span>
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteLink(idx)}
-                      className="text-slate-400 hover:text-rose-600 p-1"
-                      title="Delete link"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">No external links added.</p>
-            )}
-          </div>
+      {/* Profile Content Tabs: Authored Posts & About */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("posts")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold font-heading transition ${
+              activeTab === "posts"
+                ? "bg-[#5865F2] text-white"
+                : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
+            }`}
+          >
+            My Posts ({posts.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("about")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold font-heading transition ${
+              activeTab === "about"
+                ? "bg-[#5865F2] text-white"
+                : "text-[#B5BAC1] hover:text-white hover:bg-[#383A40]"
+            }`}
+          >
+            About & Experience
+          </button>
         </div>
 
-        {/* Right Column: Experience & Education Timeline */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Experience Section */}
-          <div className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-poppin-lilac" />
-                <h2 className="text-lg font-extrabold text-poppin-navy tracking-tight">Experience</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowExpModal(true)}
-                className="text-xs font-bold text-poppin-lilac hover:text-poppin-lilac-hover flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Position</span>
-              </button>
-            </div>
-
-            {profileData?.experience && profileData.experience.length > 0 ? (
-              <div className="space-y-4">
-                {profileData.experience.map((exp) => (
-                  <div
-                    key={exp.id}
-                    className="p-4 rounded-2xl border border-slate-200/80 hover:border-slate-300 transition-all relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteExperience(exp.id)}
-                      className="absolute top-3.5 right-3.5 text-slate-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                      title="Delete entry"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <h4 className="font-bold text-poppin-navy text-sm">{exp.title}</h4>
-                    <p className="text-xs font-semibold text-slate-600 mt-0.5">
-                      {exp.company} {exp.location && `• ${exp.location}`}
-                    </p>
-                    {(exp.startDate || exp.endDate) && (
-                      <p className="text-2xs text-slate-400 mt-1 font-medium">
-                        {exp.startDate} - {exp.endDate || "Present"}
-                      </p>
-                    )}
-                    {exp.description && (
-                      <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                        {exp.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
+        {activeTab === "posts" ? (
+          <div className="space-y-4">
+            {loadingPosts ? (
+              <div className="py-12 text-center text-xs text-[#B5BAC1]">Loading your posts...</div>
+            ) : posts.length === 0 ? (
+              <div className="py-12 bg-[#2B2D31] rounded-2xl border border-white/10 text-center text-xs text-[#B5BAC1] p-8 shadow-lg">
+                <p className="text-sm font-semibold text-white mb-2 font-heading">
+                  You haven&apos;t published any posts yet.
+                </p>
+                <p className="text-xs text-[#B5BAC1] max-w-sm mx-auto mb-4 font-sans">
+                  Share project updates, engineering insights, or design breakthroughs with the POPPIN community.
+                </p>
+                <Link
+                  href="/feed"
+                  className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition inline-block"
+                >
+                  Create a Post on Home Feed
+                </Link>
               </div>
             ) : (
-              <p className="text-xs text-slate-500 py-3">No experience records added.</p>
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={user?.id}
+                  token={token}
+                  onDelete={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+                />
+              ))
             )}
           </div>
-
-          {/* Education Section */}
-          <div className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-sm">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-poppin-lilac" />
-                <h2 className="text-lg font-extrabold text-poppin-navy tracking-tight">Education</h2>
+        ) : (
+          /* About Grid */
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Left Column: Skills, Interests, Links */}
+            <div className="space-y-6">
+              {/* Skills */}
+              <div className="bg-[#2B2D31] p-6 rounded-2xl border border-white/10 shadow-lg">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#B5BAC1] mb-3 font-heading">
+                  Skills
+                </h3>
+                {profileData?.skills && profileData.skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profileData.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="px-2.5 py-1 bg-[#383A40] text-zinc-200 border border-white/5 rounded-xl text-xs font-medium font-mono"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#B5BAC1]">No skills added yet.</p>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => setShowEduModal(true)}
-                className="text-xs font-bold text-poppin-lilac hover:text-poppin-lilac-hover flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Education</span>
-              </button>
+
+              {/* Interests */}
+              <div className="bg-[#2B2D31] p-6 rounded-2xl border border-white/10 shadow-lg">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#B5BAC1] mb-3 font-heading">
+                  Interests
+                </h3>
+                {profileData?.interests && profileData.interests.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {profileData.interests.map((interest) => (
+                      <span
+                        key={interest}
+                        className="px-2.5 py-1 bg-[#383A40] text-zinc-300 rounded-xl text-xs font-medium"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#B5BAC1]">No interests added yet.</p>
+                )}
+              </div>
+
+              {/* External Links */}
+              <div className="bg-[#2B2D31] p-6 rounded-2xl border border-white/10 shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#B5BAC1] font-heading">
+                    Links
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkModal(true)}
+                    className="text-xs font-bold text-[#5865F2] hover:text-[#4752C4] flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+                {profileData?.links && profileData.links.length > 0 ? (
+                  <div className="space-y-2">
+                    {profileData.links.map((link, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#383A40] text-xs border border-white/5"
+                      >
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-white hover:text-[#5865F2] flex items-center gap-1.5 truncate max-w-[200px]"
+                        >
+                          <LinkIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                          <span className="truncate">{link.title}</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLink(idx)}
+                          className="text-zinc-400 hover:text-red-400 p-1"
+                          title="Delete link"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#B5BAC1]">No external links added.</p>
+                )}
+              </div>
             </div>
 
-            {profileData?.education && profileData.education.length > 0 ? (
-              <div className="space-y-4">
-                {profileData.education.map((edu) => (
-                  <div
-                    key={edu.id}
-                    className="p-4 rounded-2xl border border-slate-200/80 hover:border-slate-300 transition-all relative group"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteEducation(edu.id)}
-                      className="absolute top-3.5 right-3.5 text-slate-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                      title="Delete entry"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <h4 className="font-bold text-poppin-navy text-sm">{edu.school}</h4>
-                    <p className="text-xs font-semibold text-slate-600 mt-0.5">
-                      {edu.degree} {edu.fieldOfStudy && `in ${edu.fieldOfStudy}`}
-                    </p>
-                    {(edu.startDate || edu.endDate) && (
-                      <p className="text-2xs text-slate-400 mt-1 font-medium">
-                        {edu.startDate} - {edu.endDate || "Present"}
-                      </p>
-                    )}
+            {/* Right Column: Experience & Education */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Experience */}
+              <div className="bg-[#2B2D31] p-6 rounded-2xl border border-white/10 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-[#5865F2]" />
+                    <h3 className="text-sm font-bold text-white font-heading">Experience</h3>
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowExpModal(true)}
+                    className="text-xs font-bold text-[#5865F2] hover:text-[#4752C4] flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Position</span>
+                  </button>
+                </div>
+
+                {profileData?.experience && profileData.experience.length > 0 ? (
+                  <div className="space-y-3">
+                    {profileData.experience.map((exp) => (
+                      <div
+                        key={exp.id}
+                        className="p-3.5 rounded-xl bg-[#383A40] border border-white/5 relative group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteExperience(exp.id)}
+                          className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <h4 className="font-bold text-white text-xs font-heading">{exp.title}</h4>
+                        <p className="text-xs font-medium text-[#B5BAC1] mt-0.5">
+                          {exp.company} {exp.location && `• ${exp.location}`}
+                        </p>
+                        {(exp.startDate || exp.endDate) && (
+                          <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+                            {exp.startDate} - {exp.endDate || "Present"}
+                          </p>
+                        )}
+                        {exp.description && (
+                          <p className="text-xs text-zinc-300 mt-2 leading-relaxed font-sans">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#B5BAC1]">No experience records added.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-xs text-slate-500 py-3">No education records added.</p>
-            )}
+
+              {/* Education */}
+              <div className="bg-[#2B2D31] p-6 rounded-2xl border border-white/10 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-[#5865F2]" />
+                    <h3 className="text-sm font-bold text-white font-heading">Education</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEduModal(true)}
+                    className="text-xs font-bold text-[#5865F2] hover:text-[#4752C4] flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Education</span>
+                  </button>
+                </div>
+
+                {profileData?.education && profileData.education.length > 0 ? (
+                  <div className="space-y-3">
+                    {profileData.education.map((edu) => (
+                      <div
+                        key={edu.id}
+                        className="p-3.5 rounded-xl bg-[#383A40] border border-white/5 relative group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEducation(edu.id)}
+                          className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <h4 className="font-bold text-white text-xs font-heading">{edu.school}</h4>
+                        <p className="text-xs font-medium text-[#B5BAC1] mt-0.5">
+                          {edu.degree} {edu.fieldOfStudy && `in ${edu.fieldOfStudy}`}
+                        </p>
+                        {(edu.startDate || edu.endDate) && (
+                          <p className="text-[11px] text-zinc-400 mt-1 font-mono">
+                            {edu.startDate} - {edu.endDate || "Present"}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#B5BAC1]">No education records added.</p>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Edit Profile Details Modal */}
+      {/* Followers & Following Instagram-Style Modal */}
+      {modalOpen && profileData && (
+        <FollowersFollowingModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          userId={profileData.userId}
+          username={profileData.username}
+          initialTab={modalTab}
+          isOwnProfile={true}
+          isPrivate={profileData.isPrivate}
+        />
+      )}
+
+      {/* Edit Profile Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-poppin-navy">Edit Profile Details</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#2B2D31] w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-white/10 text-white max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+              <h3 className="text-sm font-bold font-heading text-white">Edit Profile</h3>
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-zinc-400 hover:text-white p-1 rounded-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {saveSuccess && (
-              <div className="mb-4 p-3 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Profile updated successfully!</span>
+              <div className="p-3 mb-4 bg-emerald-500/10 text-emerald-300 rounded-xl text-xs flex items-center gap-2 border border-emerald-500/20">
+                <CheckCircle2 className="w-4 h-4" />
+                Profile updated successfully!
               </div>
             )}
 
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Display name
-                </label>
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Display Name</label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  maxLength={100}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none"
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Headline
-                </label>
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Headline</label>
                 <input
                   type="text"
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
-                  maxLength={160}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none"
+                  placeholder="e.g. Distributed Systems Engineer"
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Bio</label>
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Bio</label>
                 <textarea
                   rows={3}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  maxLength={1000}
-                  className="w-full p-3 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none resize-none"
+                  placeholder="Tell the community about what you craft and build..."
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2] resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Location
-                </label>
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Location</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  maxLength={100}
-                  placeholder="e.g. San Francisco, CA"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-poppin-lilac outline-none"
+                  placeholder="e.g. San Francisco, CA / Remote"
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
-              {/* Avatar Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Avatar Picture
-                </label>
-                <FileUpload
-                  currentValue={avatar || null}
-                  onUploadSuccess={(file) => setAvatar(file.url)}
-                  onRemove={() => setAvatar("")}
-                  label="Select or drag avatar image"
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Avatar Image URL</label>
+                <input
+                  type="text"
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
-              {/* Cover Image Upload (Drag & Drop or File Select) */}
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Cover Image
-                </label>
-                <FileUpload
-                  currentValue={coverImage || null}
-                  onUploadSuccess={(file) => setCoverImage(file.url)}
-                  onRemove={() => setCoverImage("")}
-                  label="Select or drag cover banner"
+                <label className="text-xs font-semibold text-[#B5BAC1] block mb-1">Cover Image URL</label>
+                <input
+                  type="text"
+                  value={coverImage}
+                  onChange={(e) => setCoverImage(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-100"
+                  disabled={isSaving}
+                  className="px-4 py-2 text-xs text-[#B5BAC1] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-6 py-2 rounded-xl bg-poppin-navy text-white text-sm font-bold hover:bg-poppin-navy-light flex items-center gap-2"
+                  className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition disabled:opacity-40"
                 >
-                  {isSaving && <Loader2 className="w-4 h-4 animate-spin text-poppin-lilac" />}
-                  <span>Save Changes</span>
+                  {isSaving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -783,45 +844,43 @@ export default function OwnProfilePage() {
 
       {/* Add Link Modal */}
       {showLinkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl border border-slate-200">
-            <h3 className="text-lg font-bold text-poppin-navy mb-4">Add External Link</h3>
-            <form onSubmit={handleAddLink} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#2B2D31] w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/10 text-white">
+            <h3 className="text-sm font-bold font-heading mb-3">Add External Link</h3>
+            <form onSubmit={handleAddLink} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Link Title
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Title</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. GitHub / Personal Site"
                   value={newLinkTitle}
                   onChange={(e) => setNewLinkTitle(e.target.value)}
-                  placeholder="e.g. GitHub, Portfolio, Substack"
-                  className="w-full px-4 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">URL</label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">URL</label>
                 <input
                   type="text"
                   required
+                  placeholder="https://..."
                   value={newLinkUrl}
                   onChange={(e) => setNewLinkUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-4 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2.5 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowLinkModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600"
+                  className="px-4 py-2 text-xs text-[#B5BAC1] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-poppin-navy text-white text-sm font-bold rounded-xl"
+                  className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl"
                 >
                   Add Link
                 </button>
@@ -833,99 +892,76 @@ export default function OwnProfilePage() {
 
       {/* Add Experience Modal */}
       {showExpModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl border border-slate-200">
-            <h3 className="text-lg font-bold text-poppin-navy mb-4">Add Work Experience</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#2B2D31] w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/10 text-white">
+            <h3 className="text-sm font-bold font-heading mb-3">Add Experience</h3>
             <form onSubmit={handleAddExperience} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Job Title
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Title</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Staff Engineer"
                   value={expTitle}
                   onChange={(e) => setExpTitle(e.target.value)}
-                  placeholder="e.g. Senior Frontend Engineer"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Company
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Company</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Vercel"
                   value={expCompany}
                   onChange={(e) => setExpCompany(e.target.value)}
-                  placeholder="e.g. Acme Corp"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Location (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={expLocation}
-                  onChange={(e) => setExpLocation(e.target.value)}
-                  placeholder="e.g. Remote / New York"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    Start Date
-                  </label>
+                  <label className="text-xs text-[#B5BAC1] block mb-1">Start Date</label>
                   <input
                     type="text"
+                    placeholder="2022"
                     value={expStart}
                     onChange={(e) => setExpStart(e.target.value)}
-                    placeholder="e.g. 2022"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                    className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    End Date
-                  </label>
+                  <label className="text-xs text-[#B5BAC1] block mb-1">End Date</label>
                   <input
                     type="text"
+                    placeholder="Present"
                     value={expEnd}
                     onChange={(e) => setExpEnd(e.target.value)}
-                    placeholder="e.g. Present"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                    className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Description
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Description (Optional)</label>
                 <textarea
                   rows={2}
                   value={expDesc}
                   onChange={(e) => setExpDesc(e.target.value)}
-                  placeholder="Responsibilities & achievements..."
-                  className="w-full p-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac resize-none"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white resize-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowExpModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600"
+                  className="px-4 py-2 text-xs text-[#B5BAC1] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-poppin-navy text-white text-sm font-bold rounded-xl"
+                  className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl"
                 >
-                  Add Experience
+                  Save Position
                 </button>
               </div>
             </form>
@@ -935,152 +971,61 @@ export default function OwnProfilePage() {
 
       {/* Add Education Modal */}
       {showEduModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl border border-slate-200">
-            <h3 className="text-lg font-bold text-poppin-navy mb-4">Add Education</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#2B2D31] w-full max-w-md rounded-2xl p-6 shadow-2xl border border-white/10 text-white">
+            <h3 className="text-sm font-bold font-heading mb-3">Add Education</h3>
             <form onSubmit={handleAddEducation} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  School / University
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">School / Institution</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Stanford University"
                   value={eduSchool}
                   onChange={(e) => setEduSchool(e.target.value)}
-                  placeholder="e.g. Stanford University"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Degree
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Degree</label>
                 <input
                   type="text"
+                  required
+                  placeholder="e.g. B.S."
                   value={eduDegree}
                   onChange={(e) => setEduDegree(e.target.value)}
-                  placeholder="e.g. B.S."
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Field of Study
-                </label>
+                <label className="text-xs text-[#B5BAC1] block mb-1">Field of Study</label>
                 <input
                   type="text"
+                  placeholder="e.g. Computer Science"
                   value={eduField}
                   onChange={(e) => setEduField(e.target.value)}
-                  placeholder="e.g. Computer Science"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full p-2 bg-[#383A40] border border-white/10 rounded-xl text-xs text-white"
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    Start Year
-                  </label>
-                  <input
-                    type="text"
-                    value={eduStart}
-                    onChange={(e) => setEduStart(e.target.value)}
-                    placeholder="2018"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                    End Year
-                  </label>
-                  <input
-                    type="text"
-                    value={eduEnd}
-                    onChange={(e) => setEduEnd(e.target.value)}
-                    placeholder="2022"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm outline-none focus:ring-2 focus:ring-poppin-lilac"
-                  />
-                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowEduModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600"
+                  className="px-4 py-2 text-xs text-[#B5BAC1] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-poppin-navy text-white text-sm font-bold rounded-xl"
+                  className="px-4 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl"
                 >
-                  Add Education
+                  Save Education
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Followers / Following Modal */}
-      {connectionsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-poppin-navy capitalize">
-                {connectionsModal}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setConnectionsModal(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {connectionsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-poppin-lilac" />
-              </div>
-            ) : connectionsList.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-6">
-                No {connectionsModal} yet.
-              </p>
-            ) : (
-              <div className="max-h-80 overflow-y-auto space-y-3">
-                {connectionsList.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/profiles/${item.username}`}
-                    onClick={() => setConnectionsModal(null)}
-                    className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-50 transition-all"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-poppin-lilac-light text-poppin-lilac font-bold flex items-center justify-center text-xs overflow-hidden border border-poppin-lilac-border">
-                      {item.avatar ? (
-                        <img
-                          src={item.avatar}
-                          alt={item.displayName || item.username}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        item.username.slice(0, 2).toUpperCase()
-                      )}
-                    </div>
-                    <div className="flex-1 truncate">
-                      <h4 className="text-sm font-bold text-poppin-navy">
-                        {item.displayName || `@${item.username}`}
-                      </h4>
-                      <p className="text-xs text-slate-500 truncate">@{item.username}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

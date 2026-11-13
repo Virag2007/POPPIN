@@ -43,5 +43,6 @@ prisma/dev.db
 
 # agents & local skills
 .agents/
+.agent/
 
 

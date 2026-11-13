@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
-import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { getAuthenticatedUser } from "@/lib/auth/middleware";
 import { FeedService } from "@/services/feed.service";
 import { paginationQuerySchema } from "@/lib/validation/engagement";
 import { successResponse, handleRouteError } from "@/lib/http/response";
 
 export async function GET(request: NextRequest) {
   try {
-    const viewer = await getOptionalAuthenticatedUser(request);
+    const user = await getAuthenticatedUser(request);
     const url = new URL(request.url);
     const rawQuery = {
       cursor: url.searchParams.get("cursor") || undefined,
@@ -14,10 +14,9 @@ export async function GET(request: NextRequest) {
     };
     const query = paginationQuerySchema.parse(rawQuery);
 
-    const result = await FeedService.getForYouFeed(viewer?.id, query.limit, query.cursor);
+    const result = await FeedService.getForYouFeed(user.id, query.limit, query.cursor);
     return successResponse(result, 200);
   } catch (error) {
     return handleRouteError(error);
   }
 }
-

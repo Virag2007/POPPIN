@@ -44,6 +44,7 @@ export interface PostResponse {
 export interface CreatePostInput {
   content: string;
   type: PostType;
+  communityId?: string;
   links?: { title: string; url: string }[];
   tags?: string[];
   media?: {

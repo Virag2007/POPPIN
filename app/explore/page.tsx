@@ -6,14 +6,32 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Search,
-  Sparkles,
+  Compass,
   TrendingUp,
   Users,
-  Flame,
-  ArrowRight,
+  Layers,
+  ArrowUpRight,
 } from "lucide-react";
 
-const TRENDING_TOPICS = [
+interface TrendingTopic {
+  tag: string;
+  count: number;
+  category: string;
+}
+
+interface Creator {
+  id: string;
+  username: string;
+  displayName: string;
+  role: string;
+  avatar: string;
+  cover: string;
+  followersCount: number;
+  tags: string[];
+  isFollowing: boolean;
+}
+
+const TRENDING_TOPICS: TrendingTopic[] = [
   { tag: "DesignSystems", count: 482, category: "Design" },
   { tag: "AutonomousAgents", count: 395, category: "AI & ML" },
   { tag: "NextJS15", count: 310, category: "Engineering" },
@@ -22,7 +40,7 @@ const TRENDING_TOPICS = [
   { tag: "DistributedSystems", count: 165, category: "Engineering" },
 ];
 
-const FEATURED_CREATORS = [
+const FEATURED_CREATORS: Creator[] = [
   {
     id: "alex_design",
     username: "alex_design",
@@ -156,32 +174,32 @@ function ExploreContent() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-20">
+    <div className="min-h-screen bg-[#FCFBF9] text-[#18181B] pb-20">
       {/* Top Hero Banner */}
-      <div className="bg-white border-b border-slate-200/80">
+      <div className="bg-white border-b border-[#E4E4E7]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-poppin-lilac/10 text-poppin-lilac text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              Explore the POPPIN Universe
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-900 border border-zinc-200 text-xs font-semibold mb-3">
+              <Compass className="w-3.5 h-3.5" />
+              <span>Explore the Platform</span>
             </div>
-            <h1 className="font-heading text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-              Discover Craft, Creators & Breakthroughs.
+            <h1 className="font-heading text-3xl sm:text-4xl font-black text-[#09090B] tracking-tight">
+              Discover Craft, Creators & Breakthroughs
             </h1>
-            <p className="text-slate-600 text-sm sm:text-base mt-2">
+            <p className="text-zinc-600 text-sm sm:text-base mt-2">
               Browse trending discussions, inspect peer projects, and follow
               world-class builders pushing the boundaries of web craft.
             </p>
 
             {/* Search Input */}
             <div className="relative mt-6">
-              <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <Search className="w-5 h-5 text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search topics (#DesignSystems), creators (@alex), or keywords..."
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-100 hover:bg-slate-100/80 focus:bg-white border border-transparent focus:border-poppin-lilac rounded-2xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition shadow-xs"
+                className="w-full pl-12 pr-4 py-3.5 bg-zinc-50 hover:bg-zinc-100/70 focus:bg-white border border-[#E4E4E7] focus:border-zinc-900 rounded-2xl text-sm text-[#09090B] placeholder-zinc-400 focus:outline-none transition"
               />
             </div>
 
@@ -202,8 +220,8 @@ function ExploreContent() {
                   }
                   className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
                     selectedFilter === tab.id
-                      ? "bg-poppin-navy text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      ? "bg-[#09090B] text-white"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                   }`}
                 >
                   {tab.label}
@@ -219,11 +237,11 @@ function ExploreContent() {
         {(selectedFilter === "all" || selectedFilter === "topics") && (
           <div>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-heading text-lg font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-poppin-lilac" />
+              <h2 className="font-heading text-lg font-bold text-[#09090B] flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-zinc-900" />
                 Trending Topics & Technologies
               </h2>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-zinc-400 font-mono">
                 Updated live
               </span>
             </div>
@@ -233,15 +251,15 @@ function ExploreContent() {
                 <Link
                   key={item.tag}
                   href={`/explore?q=${item.tag}`}
-                  className="bg-white p-4 rounded-2xl border border-slate-200/80 hover:border-poppin-lilac/40 hover:shadow-md transition group text-left block"
+                  className="bg-white p-4 rounded-2xl border border-[#E4E4E7] hover:border-zinc-900 transition group text-left block"
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-poppin-lilac">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                     {item.category}
                   </span>
-                  <h3 className="font-heading font-bold text-sm text-slate-900 group-hover:text-poppin-lilac transition truncate mt-1">
+                  <h3 className="font-heading font-bold text-sm text-[#09090B] group-hover:text-zinc-600 transition truncate mt-1">
                     #{item.tag}
                   </h3>
-                  <p className="text-[11px] text-slate-400 font-mono mt-1">
+                  <p className="text-[11px] text-zinc-400 font-mono mt-1">
                     {item.count} posts
                   </p>
                 </Link>
@@ -255,11 +273,11 @@ function ExploreContent() {
           <div>
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="font-heading text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-poppin-lilac" />
+                <h2 className="font-heading text-lg font-bold text-[#09090B] flex items-center gap-2">
+                  <Users className="w-5 h-5 text-zinc-900" />
                   Featured Creators Spotlight
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   Connect with active builders across design, systems, and AI.
                 </p>
               </div>
@@ -269,10 +287,10 @@ function ExploreContent() {
               {filteredCreators.map((creator) => (
                 <div
                   key={creator.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col"
+                  className="bg-white rounded-3xl border border-[#E4E4E7] overflow-hidden transition hover:border-zinc-900 flex flex-col"
                 >
                   {/* Cover */}
-                  <div className="h-28 w-full overflow-hidden bg-slate-900 relative">
+                  <div className="h-28 w-full overflow-hidden bg-zinc-900 relative">
                     <img
                       src={creator.cover}
                       alt={creator.displayName}
@@ -287,14 +305,14 @@ function ExploreContent() {
                       <img
                         src={creator.avatar}
                         alt={creator.displayName}
-                        className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white shadow-md bg-white"
+                        className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white bg-white"
                       />
                       <button
                         onClick={() => toggleFollow(creator.username)}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition active:scale-95 ${
+                        className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition ${
                           creator.isFollowing
-                            ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                            : "bg-poppin-navy text-white hover:bg-poppin-navy/90"
+                            ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                            : "bg-[#09090B] text-white hover:bg-zinc-800"
                         }`}
                       >
                         {creator.isFollowing ? "Following" : "Follow"}
@@ -303,23 +321,23 @@ function ExploreContent() {
 
                     <Link
                       href={`/profiles/${creator.username}`}
-                      className="font-heading font-bold text-slate-900 text-base hover:text-poppin-lilac transition"
+                      className="font-heading font-bold text-[#09090B] text-base hover:text-zinc-600 transition"
                     >
                       {creator.displayName}
                     </Link>
-                    <span className="text-xs text-slate-400 font-mono">
+                    <span className="text-xs text-zinc-400 font-mono">
                       @{creator.username}
                     </span>
 
-                    <p className="text-xs text-slate-600 mt-2 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-zinc-600 mt-2 line-clamp-2 leading-relaxed">
                       {creator.role}
                     </p>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
+                    <div className="mt-4 pt-3 border-t border-[#E4E4E7] flex flex-wrap gap-1.5">
                       {creator.tags.map((t) => (
                         <span
                           key={t}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-medium text-slate-600"
+                          className="px-2 py-0.5 rounded-md bg-zinc-100 text-[10px] font-medium text-zinc-700"
                         >
                           #{t}
                         </span>
@@ -337,11 +355,11 @@ function ExploreContent() {
           <div>
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="font-heading text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-500" />
+                <h2 className="font-heading text-lg font-bold text-[#09090B] flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-zinc-900" />
                   Trending Project Showcases
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   High-craft demos and prototypes built by the POPPIN community.
                 </p>
               </div>
@@ -351,17 +369,16 @@ function ExploreContent() {
               {SHOWCASE_POSTS.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md transition group flex flex-col"
+                  className="bg-white rounded-3xl border border-[#E4E4E7] overflow-hidden hover:border-zinc-900 transition group flex flex-col"
                 >
-                  <div className="h-44 w-full overflow-hidden bg-slate-100 relative">
+                  <div className="h-44 w-full overflow-hidden bg-zinc-100 relative">
                     <img
                       src={post.image}
                       alt={post.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5 text-orange-500" />
-                      <span>{post.likes}</span>
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-zinc-900 shadow-xs flex items-center gap-1.5 border border-[#E4E4E7]">
+                      <span>{post.likes} likes</span>
                     </div>
                   </div>
 
@@ -375,25 +392,25 @@ function ExploreContent() {
                         />
                         <Link
                           href={`/profiles/${post.username}`}
-                          className="text-xs font-semibold text-slate-700 hover:text-poppin-lilac"
+                          className="text-xs font-semibold text-zinc-700 hover:text-zinc-900"
                         >
                           {post.creator}
                         </Link>
                       </div>
 
-                      <h3 className="font-heading font-bold text-sm text-slate-900 group-hover:text-poppin-lilac transition leading-snug">
+                      <h3 className="font-heading font-bold text-sm text-[#09090B] group-hover:text-zinc-600 transition leading-snug">
                         {post.title}
                       </h3>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <div className="mt-4 pt-3 border-t border-[#E4E4E7] flex items-center justify-between text-xs text-zinc-500">
                       <span>{post.comments} comments</span>
                       <Link
                         href={`/profiles/${post.username}`}
-                        className="inline-flex items-center gap-1 font-semibold text-poppin-navy hover:text-poppin-lilac transition"
+                        className="inline-flex items-center gap-1 font-semibold text-[#09090B] hover:text-zinc-600 transition"
                       >
                         View Project
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowUpRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
                   </div>
@@ -411,7 +428,7 @@ export default function ExplorePage() {
   return (
     <Suspense
       fallback={
-        <div className="p-12 text-center text-xs text-slate-400">
+        <div className="p-12 text-center text-xs text-zinc-400">
           Loading explore...
         </div>
       }
@@ -420,4 +437,3 @@ export default function ExplorePage() {
     </Suspense>
   );
 }
-

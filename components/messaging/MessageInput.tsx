@@ -112,7 +112,7 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t border-slate-200 bg-white">
+    <div className="border-t border-white/10 bg-[#2B2D31] text-[#F2F3F5]">
       {/* Attachment Previews */}
       <AttachmentPreview
         attachments={attachments}
@@ -122,7 +122,7 @@ export function MessageInput({
 
       {/* Error Message */}
       {uploadError && (
-        <div className="px-4 py-1 text-xs text-rose-600 bg-rose-50 border-t border-rose-100 font-medium">
+        <div className="px-4 py-1 text-xs text-red-400 bg-red-500/10 border-t border-red-500/20 font-medium">
           {uploadError}
         </div>
       )}
@@ -143,11 +143,11 @@ export function MessageInput({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isUploading}
-          className="p-2 text-slate-500 hover:text-poppin-lilac hover:bg-slate-100 rounded-xl transition disabled:opacity-50 shrink-0"
-          title="Attach image (Cloudinary)"
+          className="p-2 text-[#B5BAC1] hover:text-white hover:bg-white/5 rounded-xl transition disabled:opacity-50 shrink-0"
+          title="Attach image"
         >
           {isUploading ? (
-            <Loader2 className="w-5 h-5 text-poppin-lilac animate-spin" />
+            <Loader2 className="w-5 h-5 text-[#5865F2] animate-spin" />
           ) : (
             <ImageIcon className="w-5 h-5" />
           )}
@@ -163,7 +163,7 @@ export function MessageInput({
           disabled={disabled}
           rows={1}
           maxLength={5000}
-          className="flex-1 max-h-32 min-h-[40px] px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-poppin-lilac resize-none transition"
+          className="flex-1 max-h-32 min-h-[40px] px-3.5 py-2 text-sm text-[#F2F3F5] placeholder-[#B5BAC1] bg-[#383A40] border border-white/10 rounded-xl focus:bg-[#313338] focus:outline-none focus:ring-2 focus:ring-[#5865F2] resize-none transition"
         />
 
         {/* Send Button */}
@@ -171,7 +171,7 @@ export function MessageInput({
           type="button"
           onClick={handleSubmit}
           disabled={(!text.trim() && attachments.length === 0) || isSending || isUploading || disabled}
-          className="p-2.5 bg-poppin-lilac hover:bg-poppin-lilac-hover text-white rounded-xl shadow-xs transition disabled:opacity-40 disabled:hover:bg-poppin-lilac shrink-0"
+          className="p-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-xl shadow-xs transition disabled:opacity-40 shrink-0"
           title="Send message"
         >
           {isSending ? (

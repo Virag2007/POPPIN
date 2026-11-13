@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
-import { getAuthenticatedUser, getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { getAuthenticatedUser } from "@/lib/auth/middleware";
 import { CommunityService } from "@/services/community.service";
 import { createCommunitySchema } from "@/lib/validation/community";
 import { successResponse, handleRouteError } from "@/lib/http/response";
 
 export async function GET(request: NextRequest) {
   try {
-    const viewer = await getOptionalAuthenticatedUser(request);
+    const viewer = await getAuthenticatedUser(request);
     const { searchParams } = new URL(request.url);
 
     const category = searchParams.get("category") || undefined;
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     const result = await CommunityService.listCommunities(
       { category, search, limit, cursor },
-      viewer?.id
+      viewer.id
     );
 
     return successResponse(result, 200);

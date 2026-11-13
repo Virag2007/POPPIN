@@ -52,31 +52,31 @@ export function PostCard({
   const displayScore = post.likesCount - (downvoted ? 1 : 0);
 
   return (
-    <article className="bg-white rounded-xl border border-slate-200/90 shadow-2xs hover:border-slate-300 transition-colors mb-3 overflow-hidden flex">
-      {/* Reddit Left Rail: Vote Column */}
-      <div className="w-11 sm:w-12 bg-slate-50/80 border-r border-slate-200/70 p-1.5 flex flex-col items-center shrink-0">
+    <article className="bg-white rounded-2xl border border-zinc-200 shadow-xs hover:border-zinc-300 transition-colors mb-3 overflow-hidden flex">
+      {/* Vote Column */}
+      <div className="w-11 sm:w-12 bg-zinc-50 border-r border-zinc-200 p-1.5 flex flex-col items-center shrink-0">
         <button
           type="button"
           onClick={() => {
             if (downvoted) setDownvoted(false);
             onLikeToggle(post.id);
           }}
-          className={`p-1 rounded hover:bg-slate-200 transition-colors ${
-            post.isLiked ? "text-orange-600 bg-orange-50" : "text-slate-400 hover:text-orange-600"
+          className={`p-1 rounded-lg hover:bg-zinc-200 transition-colors ${
+            post.isLiked ? "text-zinc-900 bg-zinc-200/80" : "text-zinc-400 hover:text-zinc-900"
           }`}
           title="Upvote"
           aria-label="Upvote"
         >
-          <ArrowBigUp className={`w-6 h-6 ${post.isLiked ? "fill-orange-600" : ""}`} />
+          <ArrowBigUp className={`w-6 h-6 ${post.isLiked ? "fill-zinc-900 text-zinc-900" : ""}`} />
         </button>
 
         <span
           className={`text-xs font-bold font-mono my-0.5 ${
             post.isLiked
-              ? "text-orange-600"
+              ? "text-zinc-900"
               : downvoted
-              ? "text-blue-600"
-              : "text-slate-700"
+              ? "text-zinc-600"
+              : "text-zinc-700"
           }`}
         >
           {displayScore}
@@ -85,51 +85,51 @@ export function PostCard({
         <button
           type="button"
           onClick={handleDownvote}
-          className={`p-1 rounded hover:bg-slate-200 transition-colors ${
-            downvoted ? "text-blue-600 bg-blue-50" : "text-slate-400 hover:text-blue-600"
+          className={`p-1 rounded-lg hover:bg-zinc-200 transition-colors ${
+            downvoted ? "text-zinc-700 bg-zinc-200/80" : "text-zinc-400 hover:text-zinc-700"
           }`}
           title="Downvote"
           aria-label="Downvote"
         >
-          <ArrowBigDown className={`w-6 h-6 ${downvoted ? "fill-blue-600" : ""}`} />
+          <ArrowBigDown className={`w-6 h-6 ${downvoted ? "fill-zinc-700 text-zinc-700" : ""}`} />
         </button>
       </div>
 
       {/* Main Post Column */}
-      <div className="flex-1 p-3.5 sm:p-4">
+      <div className="flex-1 p-4">
         {/* Post Metadata Header */}
-        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500 mb-2">
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-500 mb-2.5">
           {/* Community Badge */}
           <Link
             href={`/communities/${communitySlug}`}
-            className="font-bold text-slate-900 hover:underline flex items-center gap-1.5"
+            className="font-bold text-zinc-900 hover:underline flex items-center gap-1.5"
             title={communityName}
           >
-            <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-black flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[9px] font-black flex items-center justify-center">
               c/
             </span>
             <span>c/{communitySlug}</span>
           </Link>
 
-          <span className="text-slate-300">•</span>
+          <span className="text-zinc-300">•</span>
 
           {/* Author */}
-          <span className="text-slate-500 inline-flex items-center gap-1.5">
+          <span className="text-zinc-500 inline-flex items-center gap-1.5">
             {avatar && <AvatarImage src={avatar} alt={username} size="sm" />}
             <span>Posted by</span>{" "}
             <Link
               href={`/profiles/${username}`}
-              className="hover:underline font-medium text-slate-700"
+              className="hover:underline font-medium text-zinc-700"
               title={displayName}
             >
-              u/{username}
+              @{username}
             </Link>
           </span>
 
-          <span className="text-slate-300">•</span>
+          <span className="text-zinc-300">•</span>
 
           {/* Timestamp */}
-          <span className="text-slate-400">{post.createdAt}</span>
+          <span className="text-zinc-400">{post.createdAt}</span>
 
           {/* Flairs / Tags */}
           {post.tags && post.tags.length > 0 && (
@@ -137,7 +137,7 @@ export function PostCard({
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200"
+                  className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200"
                 >
                   {tag}
                 </span>
@@ -147,7 +147,7 @@ export function PostCard({
         </div>
 
         {/* Post Body Content */}
-        <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-line mb-3 font-normal">
+        <div className="text-zinc-900 text-sm leading-relaxed whitespace-pre-line mb-3 font-normal font-sans">
           {post.content}
         </div>
 
@@ -156,36 +156,36 @@ export function PostCard({
           <PostImage
             src={post.mediaUrl}
             alt="Post attachment"
-            className="mb-3"
+            className="mb-3 rounded-xl border border-zinc-200"
           />
         )}
 
-        {/* Reddit Action Bar */}
-        <div className="flex items-center gap-1 text-slate-500 text-xs font-semibold pt-1">
+        {/* Action Bar */}
+        <div className="flex items-center gap-2 text-zinc-500 text-xs font-medium pt-1">
           <button
             type="button"
             onClick={() => setShowComments(!showComments)}
-            className={`min-h-[32px] px-2.5 py-1 rounded hover:bg-slate-100 flex items-center gap-1.5 transition-colors ${
-              showComments ? "bg-slate-100 text-blue-600 font-bold" : ""
+            className={`min-h-[32px] px-2.5 py-1 rounded-lg hover:bg-zinc-100 flex items-center gap-1.5 transition-colors ${
+              showComments ? "bg-zinc-100 text-zinc-900 font-semibold" : ""
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-slate-400" />
+            <MessageSquare className="w-4 h-4 text-zinc-400" />
             <span>{post.commentsCount} Comments</span>
           </button>
 
           <button
             type="button"
             onClick={handleShare}
-            className="min-h-[32px] px-2.5 py-1 rounded hover:bg-slate-100 flex items-center gap-1.5 transition-colors"
+            className="min-h-[32px] px-2.5 py-1 rounded-lg hover:bg-zinc-100 flex items-center gap-1.5 transition-colors"
           >
             {copied ? (
               <>
                 <Check className="w-4 h-4 text-emerald-600" />
-                <span className="text-emerald-700">Copied Link</span>
+                <span className="text-emerald-700 font-medium">Copied Link</span>
               </>
             ) : (
               <>
-                <Share2 className="w-4 h-4 text-slate-400" />
+                <Share2 className="w-4 h-4 text-zinc-400" />
                 <span>Share</span>
               </>
             )}
@@ -194,18 +194,18 @@ export function PostCard({
           <button
             type="button"
             onClick={() => onBookmarkToggle(post.id)}
-            className={`min-h-[32px] px-2.5 py-1 rounded hover:bg-slate-100 flex items-center gap-1.5 transition-colors ${
-              post.isBookmarked ? "text-blue-600 font-bold" : ""
+            className={`min-h-[32px] px-2.5 py-1 rounded-lg hover:bg-zinc-100 flex items-center gap-1.5 transition-colors ${
+              post.isBookmarked ? "text-zinc-900 font-semibold" : ""
             }`}
           >
-            <Bookmark className={`w-4 h-4 ${post.isBookmarked ? "fill-blue-600 text-blue-600" : "text-slate-400"}`} />
+            <Bookmark className={`w-4 h-4 ${post.isBookmarked ? "fill-zinc-900 text-zinc-900" : "text-zinc-400"}`} />
             <span>{post.isBookmarked ? "Saved" : "Save"}</span>
           </button>
         </div>
 
         {/* Nested Comments Drawer */}
         {showComments && (
-          <div className="mt-3 pt-3 border-t border-slate-200">
+          <div className="mt-3.5 pt-3.5 border-t border-zinc-100">
             <CommentDrawer
               postId={post.id}
               comments={post.comments || []}

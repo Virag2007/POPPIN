@@ -5,7 +5,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Community } from "@/types";
-import { FileUpload } from "@/components/ui/file-upload";
 import {
   Layers,
   Users,
@@ -16,10 +15,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-const CATEGORIES = ["All", "Design", "Engineering", "AI & Research", "Founders"];
+const CATEGORIES = ["All", "Design", "Engineering", "Research", "Startups", "General"];
 
 export default function CommunitiesPage() {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,10 +43,7 @@ export default function CommunitiesPage() {
       if (activeCategory !== "All") params.set("category", activeCategory);
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
-      const res = await fetch(`/api/v1/communities?${params.toString()}`, { headers });
+      const res = await fetch(`/api/v1/communities?${params.toString()}`);
       const data = await res.json();
 
       if (res.ok && data.success && data.data?.items) {
@@ -58,7 +54,7 @@ export default function CommunitiesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeCategory, searchQuery, token]);
+  }, [activeCategory, searchQuery]);
 
   useEffect(() => {
     loadCommunities();
@@ -82,18 +78,13 @@ export default function CommunitiesPage() {
     );
 
     try {
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const method = wasMember ? "DELETE" : "POST";
       const res = await fetch(`/api/v1/communities/${comm.slug}/join`, {
         method,
-        headers,
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        // Rollback on failure
         loadCommunities();
       }
     } catch {
@@ -109,14 +100,9 @@ export default function CommunitiesPage() {
       setIsSubmitting(true);
       setCreateError(null);
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const res = await fetch("/api/v1/communities", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
@@ -125,7 +111,7 @@ export default function CommunitiesPage() {
           category,
           avatar: avatar.trim() || undefined,
           coverImage: coverImage.trim() || undefined,
-          rules: ["Critique the work constructively, not the person."],
+          rules: ["Critique the craft constructively, not the person."],
         }),
       });
 
@@ -150,18 +136,18 @@ export default function CommunitiesPage() {
   };
 
   return (
-    <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-[#F2F3F5]">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-poppin-lilac-light border border-poppin-lilac-border text-xs font-black text-poppin-navy uppercase tracking-wider mb-3">
-            <Layers className="w-3.5 h-3.5 text-poppin-lilac" />
-            <span>Community Hubs</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#383A40] border border-white/10 text-xs font-semibold text-[#8A9BFF] uppercase tracking-wider mb-3">
+            <Layers className="w-3.5 h-3.5 text-[#5865F2]" />
+            <span>Community Spaces</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-poppin-navy tracking-tight">
-            Discover & Join Interest Hubs
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-heading">
+            Discover & Join Hubs
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-xl">
+          <p className="mt-2 text-sm sm:text-base text-[#B5BAC1] max-w-xl font-sans">
             Gather with developers, designers, and founders to exchange insights, review work, and collaborate.
           </p>
         </div>
@@ -170,16 +156,16 @@ export default function CommunitiesPage() {
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-navy text-white font-extrabold text-sm hover:bg-poppin-navy-light shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all self-start md:self-auto"
+            className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold text-xs shadow-lg active:scale-[0.98] transition-all self-start md:self-auto cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-poppin-lilac" />
-            <span>Create a Hub</span>
+            <Plus className="w-4 h-4" />
+            <span>Create Community</span>
           </button>
         )}
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-[#2B2D31] p-3.5 rounded-2xl border border-white/10 shadow-lg">
         {/* Category Pills */}
         <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
           {CATEGORIES.map((cat) => (
@@ -187,10 +173,10 @@ export default function CommunitiesPage() {
               key={cat}
               type="button"
               onClick={() => setActiveCategory(cat)}
-              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
                 activeCategory === cat
-                  ? "bg-poppin-navy text-white shadow-xs"
-                  : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  ? "bg-[#5865F2] text-white shadow-xs font-bold"
+                  : "bg-[#383A40] text-[#B5BAC1] hover:text-white hover:bg-[#313338]"
               }`}
             >
               {cat}
@@ -200,28 +186,28 @@ export default function CommunitiesPage() {
 
         {/* Search Input */}
         <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search communities..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-poppin-navy placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-poppin-lilac outline-hidden transition-all"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-[#383A40] border border-white/10 text-xs font-medium text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5865F2] transition-all"
           />
         </div>
       </div>
 
       {/* Communities Grid */}
       {isLoading ? (
-        <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-poppin-lilac mb-3" />
-          <p className="text-xs font-semibold">Loading interest hubs...</p>
+        <div className="py-20 flex flex-col items-center justify-center text-zinc-500">
+          <Loader2 className="w-8 h-8 animate-spin text-[#5865F2] mb-3" />
+          <p className="text-xs font-medium">Loading spaces...</p>
         </div>
       ) : communities.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-3xl border border-slate-200 p-8">
-          <Layers className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-sm font-bold text-slate-800">No communities found</h3>
-          <p className="text-xs text-slate-500 mt-1">
+        <div className="py-16 text-center bg-[#2B2D31] rounded-2xl border border-white/10 p-8 shadow-lg">
+          <Layers className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-white font-heading">No communities found</h3>
+          <p className="text-xs text-[#B5BAC1] mt-1 font-sans">
             Try adjusting your search query or create the first hub in this category!
           </p>
         </div>
@@ -230,77 +216,77 @@ export default function CommunitiesPage() {
           {communities.map((comm) => (
             <div
               key={comm.id}
-              className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-300 transition-all overflow-hidden flex flex-col justify-between group"
+              className="bg-[#2B2D31] rounded-2xl border border-white/10 shadow-lg hover:border-white/20 transition-all overflow-hidden flex flex-col justify-between group"
             >
               {/* Card Cover & Avatar Header */}
               <div>
-                <div className="h-32 w-full bg-slate-100 relative overflow-hidden">
-                  <img
-                    src={
-                      comm.coverImage ||
-                      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80"
-                    }
-                    alt={comm.name}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
-                  />
-                  <span className="absolute top-3 right-3 px-3 py-1 rounded-full text-2xs font-extrabold uppercase bg-white/95 backdrop-blur-xs text-poppin-navy shadow-xs">
+                <div className="h-32 w-full bg-[#1E1F22] relative overflow-hidden">
+                  {comm.coverImage ? (
+                    <img
+                      src={comm.coverImage}
+                      alt={comm.name}
+                      className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-[#1E1F22] via-[#2B2D31] to-[#383A40]" />
+                  )}
+                  <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#1E1F22]/90 backdrop-blur-md text-[#8A9BFF] border border-white/10">
                     {comm.category}
                   </span>
                 </div>
 
                 <div className="px-6 pt-0 pb-4 relative">
                   {/* Avatar */}
-                  <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-md -mt-8 relative z-10 overflow-hidden mb-3 border border-slate-200">
-                    <img
-                      src={
-                        comm.avatar ||
-                        "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80"
-                      }
-                      alt={comm.name}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
+                  <div className="w-14 h-14 rounded-xl bg-[#2B2D31] p-1 shadow-md -mt-7 relative z-10 overflow-hidden mb-3 border border-white/10 font-heading">
+                    {comm.avatar ? (
+                      <img src={comm.avatar} alt={comm.name} className="w-full h-full object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-full h-full rounded-lg bg-[#383A40] flex items-center justify-center font-bold text-white text-base">
+                        {comm.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Link
                         href={`/communities/${comm.slug}`}
-                        className="text-lg font-extrabold text-poppin-navy hover:text-poppin-lilac transition-colors tracking-tight flex items-center gap-1.5"
+                        className="text-lg font-bold text-white hover:underline transition-colors tracking-tight flex items-center gap-1.5 font-heading"
                       >
                         <span>{comm.name}</span>
                       </Link>
-                      <span className="text-xs font-mono font-bold text-slate-400">c/{comm.slug}</span>
+                      <span className="text-xs font-mono font-medium text-[#B5BAC1]">c/{comm.slug}</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleToggleJoin(comm)}
-                      className={`min-h-[36px] px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shrink-0 ${
+                      className={`min-h-[36px] px-4 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                         comm.isMember
-                          ? "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
-                          : "bg-poppin-navy text-white hover:bg-poppin-navy-light shadow-xs"
+                          ? "bg-[#383A40] text-[#B5BAC1] hover:bg-red-500/10 hover:text-red-400"
+                          : "bg-[#5865F2] text-white hover:bg-[#4752C4]"
                       }`}
                     >
                       {comm.isMember ? "Joined" : "Join Hub"}
                     </button>
                   </div>
 
-                  <p className="mt-2.5 text-xs text-slate-600 font-medium line-clamp-2 leading-relaxed">
+                  <p className="mt-2.5 text-xs text-[#B5BAC1] font-medium line-clamp-2 leading-relaxed font-sans">
                     {comm.tagline || comm.description}
                   </p>
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div className="px-6 py-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-poppin-lilac" />
+              <div className="px-6 py-3.5 bg-[#1E1F22] border-t border-white/5 flex items-center justify-between text-xs font-medium text-[#B5BAC1]">
+                <span className="flex items-center gap-1.5 text-[#B5BAC1]">
+                  <Users className="w-3.5 h-3.5 text-[#5865F2]" />
                   <span>{comm.membersCount} Members</span>
                 </span>
 
                 <Link
                   href={`/communities/${comm.slug}`}
-                  className="text-poppin-navy font-bold hover:text-poppin-lilac flex items-center gap-1 transition-colors"
+                  className="text-white font-semibold hover:text-[#5865F2] flex items-center gap-1 transition-colors"
                 >
                   <span>Enter Hub</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -313,28 +299,32 @@ export default function CommunitiesPage() {
 
       {/* Create Community Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-poppin-navy/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-extrabold text-poppin-navy">Create a New Hub</h3>
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+        >
+          <div className="bg-[#2B2D31] w-full max-w-lg rounded-2xl p-6 sm:p-7 shadow-2xl border border-white/10 max-h-[90vh] overflow-y-auto text-white animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+              <h3 className="text-sm font-bold font-heading text-white">Create a Community Space</h3>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-[#B5BAC1] hover:text-white p-1 rounded-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {createError && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-medium text-red-400">
                 {createError}
               </div>
             )}
 
             <form onSubmit={handleCreateCommunity} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-[#B5BAC1] mb-1">
                   Community Name
                 </label>
                 <input
@@ -348,110 +338,88 @@ export default function CommunitiesPage() {
                     }
                   }}
                   placeholder="e.g. Generative UI Guild"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-hidden focus:ring-2 focus:ring-poppin-lilac"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#383A40] border border-white/10 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Custom Slug (c/slug)
+                <label className="block text-xs font-semibold text-[#B5BAC1] mb-1">
+                  Slug URL
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold select-none text-sm">c/</span>
+                <div className="flex items-center">
+                  <span className="px-3 py-2.5 bg-[#1E1F22] border border-r-0 border-white/10 rounded-l-xl text-xs text-zinc-400 font-mono">
+                    c/
+                  </span>
                   <input
                     type="text"
                     required
                     value={slug}
                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-                    placeholder="gen-ui-guild"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm font-mono outline-hidden focus:ring-2 focus:ring-poppin-lilac"
+                    placeholder="generative-ui"
+                    className="w-full px-3.5 py-2.5 rounded-r-xl bg-[#383A40] border border-white/10 text-xs text-white font-mono focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Category
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as Community["category"])}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold outline-hidden focus:ring-2 focus:ring-poppin-lilac"
-                >
-                  <option value="Design">Design & Creative</option>
-                  <option value="Engineering">Engineering & Systems</option>
-                  <option value="AI & Research">AI & Research</option>
-                  <option value="Founders">Founders & Startups</option>
-                  <option value="General">General</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Tagline / Catchphrase
+                <label className="block text-xs font-semibold text-[#B5BAC1] mb-1">
+                  Tagline
                 </label>
                 <input
                   type="text"
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
-                  placeholder="A one-sentence summary of the hub's mission"
-                  maxLength={100}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm outline-hidden focus:ring-2 focus:ring-poppin-lilac"
+                  placeholder="One sentence describing the space..."
+                  maxLength={120}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#383A40] border border-white/10 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Detailed Description
+                <label className="block text-xs font-semibold text-[#B5BAC1] mb-1">
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as Community["category"])}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#383A40] border border-white/10 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                >
+                  <option value="General">General</option>
+                  <option value="Design">Design</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Research">Research</option>
+                  <option value="Startups">Startups</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#B5BAC1] mb-1">
+                  Description
                 </label>
                 <textarea
                   rows={3}
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  placeholder="What can members expect? What topics are discussed?"
-                  className="w-full p-3 rounded-xl border border-slate-300 text-sm outline-hidden focus:ring-2 focus:ring-poppin-lilac resize-none"
+                  placeholder="What can members expect in this hub?"
+                  className="w-full p-3 rounded-xl bg-[#383A40] border border-white/10 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2] resize-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Community Icon
-                </label>
-                <FileUpload
-                  currentValue={avatar || null}
-                  onUploadSuccess={(file) => setAvatar(file.url)}
-                  onRemove={() => setAvatar("")}
-                  label="Upload community icon"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-700 mb-1">
-                  Cover Banner
-                </label>
-                <FileUpload
-                  currentValue={coverImage || null}
-                  onUploadSuccess={(file) => setCoverImage(file.url)}
-                  onRemove={() => setCoverImage("")}
-                  label="Upload community banner"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800"
+                  className="px-4 py-2 text-xs font-medium text-[#B5BAC1] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-poppin-navy text-white text-sm font-extrabold hover:bg-poppin-navy-light shadow-xs disabled:opacity-50 inline-flex items-center gap-2"
+                  className="px-6 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs font-bold rounded-xl transition disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-xs"
                 >
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{isSubmitting ? "Launching..." : "Launch Hub"}</span>
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+                  <span>Create Space</span>
                 </button>
               </div>
             </form>

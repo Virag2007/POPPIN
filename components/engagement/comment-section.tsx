@@ -1,8 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { CommentResponse } from "@/types";
+import { CornerDownRight, Trash2, Edit2 } from "lucide-react";
 
 interface CommentSectionProps {
   postId: string;
@@ -172,42 +174,51 @@ export function CommentSection({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mt-4">
-      <h4 className="font-semibold text-gray-900 text-sm mb-4">Comments</h4>
-
-      {/* Main Composer */}
-      <form onSubmit={handleCreateComment} className="mb-6">
-        <div className="flex gap-2">
-          <textarea
-            value={newCommentText}
-            onChange={(e) => setNewCommentText(e.target.value)}
-            placeholder="Write a comment..."
-            rows={2}
-            maxLength={2000}
-            className="w-full p-2.5 text-xs text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white resize-none"
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting || !newCommentText.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg self-end"
-          >
-            Comment
-          </button>
+    <div className="pt-4 border-t border-white/10 mt-3 text-[#F2F3F5]">
+      {/* Inline Comment Composer (X-Style) */}
+      <form onSubmit={handleCreateComment} className="mb-5">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-[#383A40] text-white flex items-center justify-center font-bold text-xs shrink-0 font-heading border border-white/10 mt-1">
+            {currentUserId ? "U" : "?"}
+          </div>
+          <div className="flex-1 space-y-2">
+            <textarea
+              value={newCommentText}
+              onChange={(e) => setNewCommentText(e.target.value)}
+              placeholder="Post your reply..."
+              rows={2}
+              maxLength={2000}
+              className="w-full p-3 text-xs text-[#F2F3F5] bg-[#383A40] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865F2] focus:bg-[#313338] placeholder-[#B5BAC1] resize-none transition-all"
+            />
+            <div className="flex items-center justify-between">
+              {errorMessage ? (
+                <p className="text-red-400 text-xs">{errorMessage}</p>
+              ) : (
+                <span className="text-[11px] text-zinc-500 font-mono">
+                  {newCommentText.length}/2000
+                </span>
+              )}
+              <button
+                type="submit"
+                disabled={isSubmitting || !newCommentText.trim()}
+                className="px-4 py-1.5 bg-[#5865F2] hover:bg-[#4752C4] disabled:opacity-40 text-white text-xs font-bold rounded-xl transition shadow-xs"
+              >
+                Reply
+              </button>
+            </div>
+          </div>
         </div>
-        {errorMessage && (
-          <p className="text-red-600 text-2xs mt-1.5">{errorMessage}</p>
-        )}
       </form>
 
-      {/* Comment Thread List */}
+      {/* Comment Stream (X-Style Clean Inline Thread) */}
       {isLoading ? (
-        <div className="text-center py-6 text-xs text-gray-400">Loading comments...</div>
+        <div className="py-6 text-center text-xs text-zinc-500">Loading replies...</div>
       ) : comments.length === 0 ? (
-        <div className="text-center py-6 text-xs text-gray-400 border-t border-dashed border-gray-200">
-          No comments yet. Be the first to share your thoughts!
+        <div className="py-6 text-center text-xs text-zinc-500 font-sans">
+          No replies yet. Be the first to share your thoughts!
         </div>
       ) : (
-        <div className="flex flex-col gap-4 border-t border-gray-100 pt-4">
+        <div className="space-y-4 divide-y divide-white/5">
           {comments.map((comment) => {
             const isAuthor = currentUserId && currentUserId === comment.authorId;
             const authorInitials = (comment.author.displayName || comment.author.username || "U")
@@ -215,235 +226,216 @@ export function CommentSection({
               .toUpperCase();
 
             return (
-              <div key={comment.id} className="flex flex-col gap-2">
+              <div key={comment.id} className="pt-3 first:pt-0">
                 {/* Top-Level Comment */}
-                <div className="flex items-start gap-2.5 group">
-                  {comment.author.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={comment.author.avatar}
-                      alt={comment.author.username}
-                      className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-2xs shrink-0 mt-0.5">
-                      {authorInitials}
+                <div className="flex items-start gap-3 group">
+                  <Link
+                    href={`/profiles/${encodeURIComponent(comment.author.username)}`}
+                    className="shrink-0 mt-0.5"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#383A40] text-white flex items-center justify-center font-bold text-xs border border-white/10 overflow-hidden font-heading">
+                      {comment.author.avatar ? (
+                        <img
+                          src={comment.author.avatar}
+                          alt={comment.author.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        authorInitials
+                      )}
                     </div>
-                  )}
+                  </Link>
 
-                  <div className="flex-1 bg-gray-50 rounded-lg p-3 text-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <Link
                           href={`/profiles/${encodeURIComponent(comment.author.username)}`}
-                          className="font-semibold text-gray-900 hover:underline"
+                          className="font-bold text-xs text-[#F2F3F5] hover:underline"
                         >
                           {comment.author.displayName || comment.author.username}
                         </Link>
-                        <span className="text-gray-400 text-2xs">@{comment.author.username}</span>
+                        <span className="text-zinc-500 text-xs font-mono">
+                          @{comment.author.username}
+                        </span>
+                        <span className="text-zinc-600 text-xs">·</span>
+                        <span className="text-zinc-500 text-xs font-mono">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
-                      <span className="text-gray-400 text-2xs">
-                        {new Date(comment.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {editingCommentId === comment.id ? (
-                      <div className="mt-2">
-                        <textarea
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          rows={2}
-                          className="w-full p-2 text-xs border border-gray-300 rounded bg-white"
-                        />
-                        <div className="flex justify-end gap-1.5 mt-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setEditingCommentId(null)}
-                            className="px-2 py-1 text-2xs text-gray-600 hover:text-gray-800"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateComment(comment.id)}
-                            className="px-2 py-1 bg-blue-600 text-white rounded text-2xs font-semibold"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-gray-800 whitespace-pre-line">{comment.content}</p>
-                    )}
-
-                    {/* Actions: Reply, Edit, Delete */}
-                    <div className="flex items-center gap-3 mt-2 text-2xs text-gray-500 font-medium">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReplyingToId(replyingToId === comment.id ? null : comment.id);
-                          setReplyText("");
-                        }}
-                        className="hover:text-blue-600 transition-colors"
-                      >
-                        Reply
-                      </button>
 
                       {isAuthor && (
-                        <>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
                           <button
                             type="button"
                             onClick={() => {
                               setEditingCommentId(comment.id);
                               setEditText(comment.content);
                             }}
-                            className="hover:text-gray-900 transition-colors"
+                            className="p-1 text-zinc-400 hover:text-white transition"
+                            title="Edit"
                           >
-                            Edit
+                            <Edit2 className="w-3 h-3" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="hover:text-red-600 transition-colors"
+                            className="p-1 text-zinc-400 hover:text-red-400 transition"
+                            title="Delete"
                           >
-                            Delete
+                            <Trash2 className="w-3 h-3" />
                           </button>
-                        </>
+                        </div>
                       )}
                     </div>
+
+                    {editingCommentId === comment.id ? (
+                      <div className="mt-2 space-y-2">
+                        <textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          rows={2}
+                          className="w-full p-2.5 text-xs text-white bg-[#383A40] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingCommentId(null)}
+                            className="px-3 py-1 text-xs text-zinc-400 hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateComment(comment.id)}
+                            className="px-3 py-1 bg-[#5865F2] text-white rounded-xl text-xs font-bold"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-200 whitespace-pre-line leading-relaxed font-sans">
+                        {comment.content}
+                      </p>
+                    )}
+
+                    {/* Inline Reply Trigger */}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-zinc-400">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingToId(replyingToId === comment.id ? null : comment.id);
+                          setReplyText("");
+                        }}
+                        className="hover:text-[#5865F2] transition flex items-center gap-1 text-[11px] font-medium"
+                      >
+                        <CornerDownRight className="w-3 h-3" />
+                        Reply
+                      </button>
+                    </div>
+
+                    {/* Inline Reply Box */}
+                    {replyingToId === comment.id && (
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          type="text"
+                          placeholder={`Reply to @${comment.author.username}...`}
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleCreateReply(comment.id);
+                            }
+                          }}
+                          className="flex-1 p-2 bg-[#383A40] text-xs text-white border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCreateReply(comment.id)}
+                          disabled={isSubmitting || !replyText.trim()}
+                          className="px-3 py-1.5 bg-[#5865F2] text-white rounded-xl text-xs font-bold hover:bg-[#4752C4] disabled:opacity-50"
+                        >
+                          Reply
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReplyingToId(null)}
+                          className="px-2 py-1.5 text-xs text-zinc-400 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Nested Replies (X-Style with Thread Line) */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="mt-3 pl-4 border-l-2 border-white/10 space-y-3">
+                        {comment.replies.map((reply) => {
+                          const isReplyAuthor = currentUserId && currentUserId === reply.authorId;
+                          return (
+                            <div key={reply.id} className="flex items-start gap-2.5 group">
+                              <Link
+                                href={`/profiles/${encodeURIComponent(reply.author.username)}`}
+                                className="shrink-0 mt-0.5"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-[#383A40] text-white flex items-center justify-center font-bold text-[10px] border border-white/10 overflow-hidden font-heading">
+                                  {reply.author.avatar ? (
+                                    <img
+                                      src={reply.author.avatar}
+                                      alt={reply.author.username}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    (reply.author.displayName || reply.author.username || "U")
+                                      .slice(0, 2)
+                                      .toUpperCase()
+                                  )}
+                                </div>
+                              </Link>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Link
+                                      href={`/profiles/${encodeURIComponent(reply.author.username)}`}
+                                      className="font-bold text-xs text-[#F2F3F5] hover:underline"
+                                    >
+                                      {reply.author.displayName || reply.author.username}
+                                    </Link>
+                                    <span className="text-zinc-500 text-[11px] font-mono">
+                                      @{reply.author.username}
+                                    </span>
+                                    <span className="text-zinc-600 text-xs">·</span>
+                                    <span className="text-zinc-500 text-[11px] font-mono">
+                                      {new Date(reply.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+
+                                  {isReplyAuthor && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteComment(reply.id)}
+                                      className="p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-2.5 h-2.5" />
+                                    </button>
+                                  )}
+                                </div>
+
+                                <p className="text-xs text-zinc-300 whitespace-pre-line leading-relaxed font-sans">
+                                  {reply.content}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Inline 1-Level Reply Composer */}
-                {replyingToId === comment.id && (
-                  <div className="ml-10 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder={`Reply to @${comment.author.username}...`}
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleCreateReply(comment.id);
-                        }
-                      }}
-                      className="flex-1 p-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleCreateReply(comment.id)}
-                      disabled={isSubmitting || !replyText.trim()}
-                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Reply
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setReplyingToId(null)}
-                      className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-
-                {/* 1-Level Nested Replies List (Strictly 1 Level Only) */}
-                {comment.replies && comment.replies.length > 0 && (
-                  <div className="ml-10 flex flex-col gap-2 border-l-2 border-gray-100 pl-3">
-                    {comment.replies.map((reply) => {
-                      const isReplyAuthor = currentUserId && currentUserId === reply.authorId;
-                      const replyInitials = (reply.author.displayName || reply.author.username || "U")
-                        .slice(0, 2)
-                        .toUpperCase();
-
-                      return (
-                        <div key={reply.id} className="flex items-start gap-2 group">
-                          {reply.author.avatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={reply.author.avatar}
-                              alt={reply.author.username}
-                              className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-2xs shrink-0 mt-0.5">
-                              {replyInitials}
-                            </div>
-                          )}
-
-                          <div className="flex-1 bg-gray-50 rounded-lg p-2.5 text-xs">
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-1.5">
-                                <Link
-                                  href={`/profiles/${encodeURIComponent(reply.author.username)}`}
-                                  className="font-semibold text-gray-900 hover:underline"
-                                >
-                                  {reply.author.displayName || reply.author.username}
-                                </Link>
-                                <span className="text-gray-400 text-2xs">@{reply.author.username}</span>
-                              </div>
-                              <span className="text-gray-400 text-2xs">
-                                {new Date(reply.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-
-                            {editingCommentId === reply.id ? (
-                              <div className="mt-1.5">
-                                <input
-                                  type="text"
-                                  value={editText}
-                                  onChange={(e) => setEditText(e.target.value)}
-                                  className="w-full p-1.5 text-xs border border-gray-300 rounded bg-white"
-                                />
-                                <div className="flex justify-end gap-1.5 mt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingCommentId(null)}
-                                    className="px-2 py-0.5 text-2xs text-gray-600 hover:text-gray-800"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleUpdateComment(reply.id)}
-                                    className="px-2 py-0.5 bg-blue-600 text-white rounded text-2xs font-semibold"
-                                  >
-                                    Save
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="text-gray-800 whitespace-pre-line">{reply.content}</p>
-                            )}
-
-                            {isReplyAuthor && (
-                              <div className="flex items-center gap-3 mt-1.5 text-2xs text-gray-500 font-medium">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingCommentId(reply.id);
-                                    setEditText(reply.content);
-                                  }}
-                                  className="hover:text-gray-900 transition-colors"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteComment(reply.id)}
-                                  className="hover:text-red-600 transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -452,4 +444,3 @@ export function CommentSection({
     </div>
   );
 }
-

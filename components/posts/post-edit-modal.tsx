@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PostResponse, PostType, UpdatePostInput } from "@/types";
+import { X } from "lucide-react";
 
 interface PostEditModalProps {
   post: PostResponse;
@@ -24,6 +25,17 @@ export function PostEditModal({
   const [newTag, setNewTag] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -84,23 +96,33 @@ export function PostEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-in fade-in zoom-in duration-150">
-        <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-          <h3 className="font-semibold text-gray-900 text-sm">Edit Post</h3>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-post-title"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div className="bg-[#2B2D31] rounded-2xl shadow-2xl border border-white/10 max-w-lg w-full p-6 text-[#F2F3F5] animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between pb-3.5 border-b border-white/10 mb-4">
+          <h3 id="edit-post-title" className="font-bold text-sm font-heading text-white">
+            Edit Post
+          </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded"
+            aria-label="Close modal"
+            className="text-[#B5BAC1] hover:text-white p-1 rounded-lg hover:bg-[#383A40] transition"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSave}>
+        <form onSubmit={handleSave} className="space-y-4">
           {/* Post Type Selector */}
-          <div className="mb-3">
-            <label className="text-xs font-semibold text-gray-600 block mb-1">Post Type</label>
+          <div>
+            <label className="text-xs font-semibold text-[#B5BAC1] block mb-1.5 font-heading">
+              Post Type
+            </label>
             <div className="flex flex-wrap gap-2">
               {(
                 [
@@ -114,10 +136,10 @@ export function PostEditModal({
                   key={t.id}
                   type="button"
                   onClick={() => setType(t.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
                     type === t.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-[#5865F2] text-white shadow-sm"
+                      : "bg-[#383A40] text-[#B5BAC1] hover:text-white hover:bg-[#313338]"
                   }`}
                 >
                   {t.label}
@@ -127,33 +149,39 @@ export function PostEditModal({
           </div>
 
           {/* Content */}
-          <div className="mb-3">
-            <label className="text-xs font-semibold text-gray-600 block mb-1">Content</label>
+          <div>
+            <label className="text-xs font-semibold text-[#B5BAC1] block mb-1.5 font-heading">
+              Content
+            </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={5}
               maxLength={5000}
-              className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="What are you building or sharing?"
+              className="w-full p-3 text-sm text-[#F2F3F5] bg-[#383A40] border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865F2] placeholder-zinc-500 font-sans resize-none transition-all"
             />
           </div>
 
           {/* Tags */}
-          <div className="mb-4">
-            <label className="text-xs font-semibold text-gray-600 block mb-1">Tags</label>
-            <div className="flex flex-wrap gap-1.5 mb-2">
+          <div>
+            <label className="text-xs font-semibold text-[#B5BAC1] block mb-1.5 font-heading">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-1.5 mb-2.5">
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#383A40] text-zinc-300 text-xs border border-white/5 font-mono"
                 >
                   #{tag}
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="text-gray-400 hover:text-gray-700"
+                    aria-label={`Remove tag ${tag}`}
+                    className="text-zinc-400 hover:text-white"
                   >
-                    ✕
+                    <X className="w-3 h-3" />
                   </button>
                 </span>
               ))}
@@ -161,15 +189,21 @@ export function PostEditModal({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Add a tag..."
+                placeholder="Add a tag and press Enter..."
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                className="p-1.5 text-xs border border-gray-300 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                className="p-2 text-xs text-white bg-[#383A40] border border-white/10 rounded-xl flex-1 focus:outline-none focus:ring-2 focus:ring-[#5865F2] placeholder-zinc-500 font-mono"
               />
               <button
                 type="button"
                 onClick={handleAddTag}
-                className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-2 text-xs bg-[#383A40] hover:bg-[#313338] text-white rounded-xl font-medium border border-white/10 transition"
               >
                 Add
               </button>
@@ -177,24 +211,24 @@ export function PostEditModal({
           </div>
 
           {errorMessage && (
-            <div className="p-2.5 mb-3 bg-red-50 text-red-700 rounded text-xs border border-red-200">
+            <div className="p-3 bg-red-500/10 text-red-400 rounded-xl text-xs border border-red-500/20">
               {errorMessage}
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+          <div className="flex justify-end gap-2.5 pt-3.5 border-t border-white/10">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-xs text-[#B5BAC1] hover:text-white hover:bg-white/5 rounded-xl transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || !content.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+              className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-xl text-xs font-bold transition disabled:opacity-40 shadow-xs"
             >
               {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
@@ -204,4 +238,3 @@ export function PostEditModal({
     </div>
   );
 }
-

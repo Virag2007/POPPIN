@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
+  Users,
   UserPlus,
   UserCheck,
   Loader2,
@@ -23,7 +23,7 @@ const SUGGESTED_ROLES = [
   "Product Designer",
   "Full-Stack Developer",
   "AI Researcher",
-  "Founder & CEO",
+  "Founder & Builder",
   "Creator / Writer",
   "DevOps Engineer",
   "Data Scientist",
@@ -98,9 +98,6 @@ export default function OnboardingPage() {
         const data = await res.json();
 
         if (data.success && data.data) {
-          if (data.data.isCompleted) {
-            // Already completed, can still view or go to profile
-          }
           if (data.data.role) setRole(data.data.role);
           if (data.data.headline) setHeadline(data.data.headline);
           if (Array.isArray(data.data.skills)) setSkills(data.data.skills);
@@ -206,7 +203,7 @@ export default function OnboardingPage() {
       if (data.success) {
         setCurrentStep(3);
       } else {
-        setErrorMsg(data.error?.message || "Failed to save Step 2 details.");
+        setErrorMsg(data.error?.message || "Failed to save skills and interests.");
       }
     } catch {
       setErrorMsg("Server connection error.");
@@ -217,18 +214,17 @@ export default function OnboardingPage() {
 
   const toggleFollowUser = async (targetUserId: string, currentlyFollowing: boolean) => {
     try {
-      const method = currentlyFollowing ? "DELETE" : "POST";
-      const res = await fetch(`/api/v1/users/${targetUserId}/follow`, {
-        method,
+      const endpoint = currentlyFollowing ? "unfollow" : "follow";
+      await fetch(`/api/v1/users/${targetUserId}/${endpoint}`, {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
 
-      if (data.success) {
-        setSuggestions((prev) =>
-          prev.map((s) => (s.id === targetUserId ? { ...s, isFollowing: !currentlyFollowing } : s))
-        );
-      }
+      setSuggestions((prev) =>
+        prev.map((s) =>
+          s.id === targetUserId ? { ...s, isFollowing: !currentlyFollowing } : s
+        )
+      );
     } catch {
       // Ignore
     }
@@ -247,7 +243,7 @@ export default function OnboardingPage() {
 
       if (data.success) {
         await refreshUser();
-        router.push("/profile");
+        router.push("/feed");
       } else {
         setErrorMsg(data.error?.message || "Could not complete onboarding.");
       }
@@ -288,15 +284,15 @@ export default function OnboardingPage() {
 
   if (!user && !loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <AlertCircle className="w-12 h-12 text-slate-400 mb-4" />
-        <h2 className="text-xl font-bold text-poppin-navy">Authentication Required</h2>
-        <p className="mt-2 text-slate-600 text-sm max-w-sm">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-[#FCFBF9]">
+        <AlertCircle className="w-10 h-10 text-zinc-400 mb-4" />
+        <h2 className="text-xl font-bold text-zinc-900 font-display">Authentication Required</h2>
+        <p className="mt-2 text-zinc-600 text-sm max-w-sm">
           Please sign in or create an account to start your onboarding journey.
         </p>
         <Link
           href="/login"
-          className="mt-5 px-6 py-2.5 bg-poppin-navy text-white font-bold rounded-xl text-sm"
+          className="mt-5 px-6 py-2.5 bg-zinc-900 text-white font-medium rounded-xl text-sm hover:bg-zinc-800 transition"
         >
           Sign In
         </Link>
@@ -305,12 +301,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-[#FCFBF9]">
       {/* Step Header & Timeline Indicator */}
       <div className="mb-8">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
           <span>Step {currentStep} of 3</span>
-          <span className="text-poppin-lilac font-extrabold">
+          <span className="text-zinc-900 font-bold">
             {currentStep === 1
               ? "Your Role & Headline"
               : currentStep === 2
@@ -320,9 +316,9 @@ export default function OnboardingPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+        <div className="w-full bg-zinc-200 h-1.5 rounded-full overflow-hidden">
           <div
-            className="bg-poppin-lilac h-full transition-all duration-300 ease-out rounded-full"
+            className="bg-zinc-900 h-full transition-all duration-300 ease-out rounded-full"
             style={{ width: `${(currentStep / 3) * 100}%` }}
           />
         </div>
@@ -331,28 +327,28 @@ export default function OnboardingPage() {
       {errorMsg && (
         <div
           role="alert"
-          className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-start gap-2.5"
+          className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-2.5"
         >
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* STEP 1: Role & Headline */}
       {currentStep === 1 && (
-        <div className="bg-white p-7 sm:p-9 rounded-3xl border border-slate-200/90 shadow-sm">
+        <div className="bg-white p-7 sm:p-9 rounded-2xl border border-zinc-200 shadow-xs">
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-poppin-navy tracking-tight">
+            <h2 className="text-2xl font-black text-zinc-900 tracking-tight font-display">
               Tell the community what you do
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1.5 text-sm text-zinc-600 font-sans">
               Select or type your primary role and craft a quick headline that introduces your perspective.
             </p>
           </div>
 
           <form onSubmit={handleSaveStep1} className="space-y-6">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+              <label className="block text-xs font-semibold text-zinc-700 mb-2">
                 Primary Role
               </label>
               {/* Role Chips */}
@@ -362,10 +358,10 @@ export default function OnboardingPage() {
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-poppin-lilac ${
+                    className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                       role === r
-                        ? "bg-poppin-navy text-white shadow-xs"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        ? "bg-zinc-900 text-white shadow-xs"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                     }`}
                   >
                     {r}
@@ -379,16 +375,16 @@ export default function OnboardingPage() {
                 onChange={(e) => setRole(e.target.value)}
                 placeholder="Or type custom role..."
                 maxLength={60}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-poppin-navy focus:ring-2 focus:ring-poppin-lilac focus:border-poppin-lilac outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label className="block text-xs font-semibold text-zinc-700">
                   Headline / One-Liner
                 </label>
-                <span className="text-2xs text-slate-400 font-semibold">{headline.length}/160</span>
+                <span className="text-xs text-zinc-400">{headline.length}/160</span>
               </div>
               <textarea
                 required
@@ -397,7 +393,7 @@ export default function OnboardingPage() {
                 onChange={(e) => setHeadline(e.target.value)}
                 placeholder="e.g. Building distributed systems & crafting high-craft frontend experiences."
                 maxLength={160}
-                className="w-full p-3.5 rounded-xl border border-slate-300 text-sm font-medium text-poppin-navy focus:ring-2 focus:ring-poppin-lilac focus:border-poppin-lilac outline-none resize-none"
+                className="w-full p-3.5 rounded-xl border border-zinc-200 text-sm font-medium text-zinc-900 focus:ring-2 focus:ring-zinc-900 focus:border-zinc-900 outline-none resize-none"
               />
             </div>
 
@@ -405,11 +401,11 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={saving || !role.trim() || !headline.trim()}
-                className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-navy text-white font-extrabold text-sm hover:bg-poppin-navy-light shadow-xs hover:shadow-md transition-all disabled:opacity-50"
+                className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 text-white font-medium text-sm hover:bg-zinc-800 shadow-xs transition-all disabled:opacity-50 active:scale-[0.98]"
               >
-                {saving && <Loader2 className="w-4 h-4 animate-spin text-poppin-lilac" />}
+                {saving && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
                 <span>Save & Continue</span>
-                <ArrowRight className="w-4 h-4 text-poppin-lilac" />
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
@@ -418,12 +414,12 @@ export default function OnboardingPage() {
 
       {/* STEP 2: Skills & Interests */}
       {currentStep === 2 && (
-        <div className="bg-white p-7 sm:p-9 rounded-3xl border border-slate-200/90 shadow-sm">
+        <div className="bg-white p-7 sm:p-9 rounded-2xl border border-zinc-200 shadow-xs">
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-poppin-navy tracking-tight">
+            <h2 className="text-2xl font-black text-zinc-900 tracking-tight font-display">
               Pick your skills & passions
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1.5 text-sm text-zinc-600 font-sans">
               We use these tags to recommend people, discussions, and feeds aligned with your craft.
             </p>
           </div>
@@ -432,7 +428,7 @@ export default function OnboardingPage() {
             {/* Skills Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label className="block text-xs font-semibold text-zinc-700">
                   Skills ({skills.length} selected)
                 </label>
               </div>
@@ -444,14 +440,14 @@ export default function OnboardingPage() {
                       key={item}
                       type="button"
                       onClick={() => toggleSkill(item)}
-                      className={`min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      className={`min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-poppin-lilac text-white shadow-xs"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          ? "bg-zinc-900 text-white shadow-xs"
+                          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                       }`}
                     >
                       <span>{item}</span>
-                      {isSelected ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      {isSelected ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                     </button>
                   );
                 })}
@@ -468,12 +464,12 @@ export default function OnboardingPage() {
                       addCustomSkill();
                     }
                   }}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-300 text-sm font-medium outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="flex-1 px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium outline-none focus:ring-2 focus:ring-zinc-900"
                 />
                 <button
                   type="button"
                   onClick={addCustomSkill}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-700 font-medium text-xs hover:bg-zinc-200"
                 >
                   Add
                 </button>
@@ -483,7 +479,7 @@ export default function OnboardingPage() {
             {/* Interests Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label className="block text-xs font-semibold text-zinc-700">
                   Interests ({interests.length} selected)
                 </label>
               </div>
@@ -495,14 +491,14 @@ export default function OnboardingPage() {
                       key={item}
                       type="button"
                       onClick={() => toggleInterest(item)}
-                      className={`min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      className={`min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
                         isSelected
-                          ? "bg-poppin-navy text-white shadow-xs"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          ? "bg-zinc-900 text-white shadow-xs"
+                          : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                       }`}
                     >
                       <span>{item}</span>
-                      {isSelected ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      {isSelected ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                     </button>
                   );
                 })}
@@ -519,23 +515,23 @@ export default function OnboardingPage() {
                       addCustomInterest();
                     }
                   }}
-                  className="flex-1 px-4 py-2 rounded-xl border border-slate-300 text-sm font-medium outline-none focus:ring-2 focus:ring-poppin-lilac"
+                  className="flex-1 px-4 py-2 rounded-xl border border-zinc-200 text-sm font-medium outline-none focus:ring-2 focus:ring-zinc-900"
                 />
                 <button
                   type="button"
                   onClick={addCustomInterest}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
+                  className="px-4 py-2 rounded-xl bg-zinc-100 text-zinc-700 font-medium text-xs hover:bg-zinc-200"
                 >
                   Add
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
-                className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-slate-600 hover:text-poppin-navy font-bold text-sm"
+                className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-zinc-600 hover:text-zinc-900 font-medium text-sm"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
@@ -543,11 +539,11 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={saving || skills.length === 0 || interests.length === 0}
-                className="min-h-[46px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-poppin-navy text-white font-extrabold text-sm hover:bg-poppin-navy-light shadow-xs disabled:opacity-50"
+                className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 text-white font-medium text-sm hover:bg-zinc-800 shadow-xs disabled:opacity-50 active:scale-[0.98]"
               >
-                {saving && <Loader2 className="w-4 h-4 animate-spin text-poppin-lilac" />}
+                {saving && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
                 <span>Save & Continue</span>
-                <ArrowRight className="w-4 h-4 text-poppin-lilac" />
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
@@ -556,22 +552,22 @@ export default function OnboardingPage() {
 
       {/* STEP 3: Suggested Connections & Complete */}
       {currentStep === 3 && (
-        <div className="bg-white p-7 sm:p-9 rounded-3xl border border-slate-200/90 shadow-sm">
+        <div className="bg-white p-7 sm:p-9 rounded-2xl border border-zinc-200 shadow-xs">
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-poppin-navy tracking-tight">
+            <h2 className="text-2xl font-black text-zinc-900 tracking-tight font-display">
               Connect with fellow creators
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Follow a few people to populate your network and unlock your personal dashboard.
+            <p className="mt-1.5 text-sm text-zinc-600 font-sans">
+              Follow a few people to populate your feed and unlock your discussions.
             </p>
           </div>
 
           {suggestions.length === 0 ? (
-            <div className="text-center py-8 bg-slate-50 rounded-2xl border border-slate-200/70 mb-6">
-              <Sparkles className="w-8 h-8 text-poppin-lilac mx-auto mb-2" />
-              <p className="text-sm font-semibold text-slate-700">You are one of our earliest members!</p>
-              <p className="text-xs text-slate-500 mt-1">
-                More creators matching your interests will be recommended as the community grows.
+            <div className="text-center py-8 bg-zinc-50 rounded-2xl border border-zinc-200 mb-6">
+              <Users className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-zinc-800">You are one of our earliest members!</p>
+              <p className="text-xs text-zinc-500 mt-1">
+                More creators matching your interests will appear in your feed.
               </p>
             </div>
           ) : (
@@ -579,25 +575,25 @@ export default function OnboardingPage() {
               {suggestions.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-4 rounded-2xl border border-slate-200/80 hover:border-slate-300 transition-all bg-white"
+                  className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 hover:border-zinc-300 transition-all bg-white"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-full bg-poppin-lilac-light text-poppin-lilac font-black flex items-center justify-center text-sm border border-poppin-lilac-border">
+                    <div className="w-10 h-10 rounded-full bg-zinc-100 text-zinc-800 font-bold flex items-center justify-center text-sm border border-zinc-200 overflow-hidden">
                       {item.avatar ? (
                         <img
                           src={item.avatar}
                           alt={item.displayName || item.username}
-                          className="w-full h-full rounded-full object-cover"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         item.username.slice(0, 2).toUpperCase()
                       )}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-poppin-navy">
+                      <h4 className="text-sm font-bold text-zinc-900">
                         {item.displayName || `@${item.username}`}
                       </h4>
-                      <p className="text-xs text-slate-500 truncate max-w-xs">
+                      <p className="text-xs text-zinc-500 truncate max-w-xs">
                         {item.headline || `@${item.username}`}
                       </p>
                     </div>
@@ -606,10 +602,10 @@ export default function OnboardingPage() {
                   <button
                     type="button"
                     onClick={() => toggleFollowUser(item.id, !!item.isFollowing)}
-                    className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    className={`min-h-[36px] px-4 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
                       item.isFollowing
-                        ? "bg-slate-100 text-slate-700 hover:bg-rose-50 hover:text-rose-600"
-                        : "bg-poppin-navy text-white hover:bg-poppin-navy-light"
+                        ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        : "bg-zinc-900 text-white hover:bg-zinc-800"
                     }`}
                   >
                     {item.isFollowing ? (
@@ -619,7 +615,7 @@ export default function OnboardingPage() {
                       </>
                     ) : (
                       <>
-                        <UserPlus className="w-3.5 h-3.5 text-poppin-lilac" />
+                        <UserPlus className="w-3.5 h-3.5" />
                         <span>Follow</span>
                       </>
                     )}
@@ -629,11 +625,11 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
             <button
               type="button"
               onClick={() => setCurrentStep(2)}
-              className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-slate-600 hover:text-poppin-navy font-bold text-sm"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-zinc-600 hover:text-zinc-900 font-medium text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Back</span>
@@ -642,11 +638,11 @@ export default function OnboardingPage() {
               type="button"
               onClick={handleCompleteOnboarding}
               disabled={saving}
-              className="min-h-[48px] inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-poppin-lilac hover:bg-poppin-lilac-hover text-white font-extrabold text-sm shadow-md transition-all disabled:opacity-50"
+              className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-sm shadow-xs transition-all disabled:opacity-50 active:scale-[0.98]"
             >
-              {saving && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span>Finish & Enter Poppin.</span>
+              {saving && <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />}
+              <CheckCircle2 className="w-4 h-4 text-white" />
+              <span>Finish & Enter POPPIN</span>
             </button>
           </div>
         </div>
@@ -654,4 +650,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

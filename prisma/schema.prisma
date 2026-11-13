@@ -1,7 +1,8 @@
-// POPPIN Prisma Schema - Unified Platform Architecture
+// POPPIN Prisma Schema - PostgreSQL Production Configuration
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -13,7 +14,7 @@ model User {
   email        String    @unique
   passwordHash String?
   googleId     String?   @unique
-  tokenVersion Int       @default(1) // Token revocation on password change or logout
+  tokenVersion Int       @default(1)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -25,8 +26,10 @@ model User {
   passwordResetTokens PasswordResetToken[]
 
   // Connections (Followers & Following)
-  following Follow[] @relation("UserFollowing")
-  followers Follow[] @relation("UserFollowers")
+  following              Follow[]        @relation("UserFollowing")
+  followers              Follow[]        @relation("UserFollowers")
+  followRequestsSent     FollowRequest[] @relation("SentFollowRequests")
+  followRequestsReceived FollowRequest[] @relation("ReceivedFollowRequests")
 
   // Blocks (Blocker & Blocked)
   blockedUsers Block[] @relation("UserBlocks")
@@ -48,6 +51,7 @@ model User {
   communityMemberships   CommunityMember[]
   media                  Media[]
   messageReceipts        MessageReceipt[]
+  messageReactions       MessageReaction[]
 }
 
 model PasswordResetToken {
@@ -75,11 +79,11 @@ model Profile {
   location    String?
 
   // Stored as JSON strings for simplicity & portability across DBs
-  skills      String   @default("[]") // string[]
-  interests   String   @default("[]") // string[]
-  links       String   @default("[]") // { title: string, url: string }[]
-  education   String   @default("[]") // { id, school, degree, fieldOfStudy, startDate, endDate }[]
-  experience  String   @default("[]") // { id, company, title, location, startDate, endDate, current, description }[]
+  skills      String   @default("[]")
+  interests   String   @default("[]")
+  links       String   @default("[]")
+  education   String   @default("[]")
+  experience  String   @default("[]")
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -91,8 +95,8 @@ model Onboarding {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role        String?
   headline    String?
-  skills      String   @default("[]") // string[]
-  interests   String   @default("[]") // string[]
+  skills      String   @default("[]")
+  interests   String   @default("[]")
   isCompleted Boolean  @default(false)
   step        Int      @default(1)
   createdAt   DateTime @default(now())
@@ -110,6 +114,19 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@index([followerId])
+}
+
+model FollowRequest {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentFollowRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedFollowRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
 }
 
 model PrivacySettings {
@@ -144,7 +161,7 @@ model UserReport {
   reportedUser   User     @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
   reason         String
   details        String?
-  status         String   @default("PENDING") // PENDING, REVIEWED, RESOLVED, DISMISSED
+  status         String   @default("PENDING")
   createdAt      DateTime @default(now())
 
   @@index([reportedUserId])
@@ -163,8 +180,8 @@ model Post {
   community   Community?  @relation(fields: [communityId], references: [id], onDelete: SetNull)
   content     String
   type        String      // UPDATE, PROJECT_SHOWCASE, ACHIEVEMENT, LOOKING_FOR
-  links       String      @default("[]") // JSON string of ExternalLinkItem[]
-  tags        String      @default("[]") // JSON string of string[]
+  links       String      @default("[]")
+  tags        String      @default("[]")
   media       PostMedia[]
   likes       Like[]
   comments    Comment[]
@@ -175,6 +192,9 @@ model Post {
   @@index([authorId])
   @@index([communityId])
   @@index([createdAt])
+  @@index([createdAt(sort: Desc), id])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([communityId, createdAt(sort: Desc)])
 }
 
 model PostMedia {
@@ -219,6 +239,7 @@ model Comment {
   @@index([postId])
   @@index([authorId])
   @@index([replyToCommentId])
+  @@index([postId, createdAt(sort: Asc)])
 }
 
 model SavedPost {
@@ -252,7 +273,7 @@ model ConversationMember {
   conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId             String
   user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role               String       @default("MEMBER") // ADMIN, MEMBER
+  role               String       @default("MEMBER") // MEMBER or ADMIN
   lastReadAt         DateTime     @default(now())
   lastReadMessageId  String?
   createdAt          DateTime     @default(now())
@@ -275,6 +296,7 @@ model Message {
   deletedAt       DateTime?
   receipts        MessageReceipt[]
   attachments     MessageAttachment[]
+  reactions       MessageReaction[]
 
   @@unique([senderId, clientMessageId])
   @@index([conversationId, createdAt])
@@ -319,13 +341,14 @@ model Notification {
   recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   actorId     String
   actor       User     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
-  type        String   // POST_LIKE, POST_COMMENT, NEW_FOLLOWER, NEW_MESSAGE
-  entityId    String?  // Reference ID (postId, commentId, conversationId)
+  type        String
+  entityId    String?
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   @@index([recipientId, isRead])
   @@index([createdAt])
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
 }
 
 model Community {
@@ -334,15 +357,16 @@ model Community {
   slug        String            @unique
   tagline     String?
   description String?
-  category    String            @default("General") // Design, Engineering, AI & Research, Founders, General
+  category    String            @default("General")
   avatar      String?
   coverImage  String?
-  rules       String            @default("[]") // JSON string of string[]
+  rules       String            @default("[]")
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
   members     CommunityMember[]
   posts       Post[]
+  channels    Channel[]
 
   @@index([category])
   @@index([createdAt])
@@ -354,7 +378,7 @@ model CommunityMember {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role        String    @default("MEMBER") // ADMIN, MODERATOR, MEMBER
+  role        String    @default("MEMBER")
   joinedAt    DateTime  @default(now())
 
   @@unique([communityId, userId])
@@ -381,5 +405,34 @@ model Media {
   @@index([userId])
   @@index([folder])
   @@index([createdAt])
+}
+
+model Channel {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  topic       String?
+  type        String    @default("TEXT") // TEXT, ANNOUNCEMENT, VOICE
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([communityId, slug])
+  @@index([communityId])
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
 }
 

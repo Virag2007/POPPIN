@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getAuthenticatedUser, getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { getAuthenticatedUser } from "@/lib/auth/middleware";
 import { PostService } from "@/services/post.service";
 import { updatePostSchema } from "@/lib/validation/post";
 import { successResponse, handleRouteError } from "@/lib/http/response";
@@ -10,8 +10,8 @@ export async function GET(
 ) {
   try {
     const { postId } = await context.params;
-    const viewer = await getOptionalAuthenticatedUser(request);
-    const post = await PostService.getPost(postId, viewer?.id);
+    const viewer = await getAuthenticatedUser(request);
+    const post = await PostService.getPost(postId, viewer.id);
     return successResponse(post, 200);
   } catch (error) {
     return handleRouteError(error);

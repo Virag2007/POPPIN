@@ -13,10 +13,49 @@ export class AuthService {
       throw new AppError("Email is already registered", 409, "EMAIL_ALREADY_EXISTS");
     }
 
+    if (input.username) {
+      const usernameTaken = await prisma.profile.findUnique({
+        where: { username: input.username.toLowerCase() },
+      });
+      if (usernameTaken) {
+        throw new AppError("Username is already taken", 409, "USERNAME_ALREADY_EXISTS");
+      }
+    }
+
     const passwordHash = await hashPassword(input.password);
-    const user = await UserRepository.create({
-      email: input.email,
-      passwordHash,
+
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email: input.email.toLowerCase(),
+          passwordHash,
+          privacySettings: {
+            create: {},
+          },
+          onboarding: {
+            create: {},
+          },
+          ...(input.username
+            ? {
+                profile: {
+                  create: {
+                    username: input.username.toLowerCase(),
+                    displayName: input.displayName || input.name || input.username,
+                  },
+                },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          tokenVersion: true,
+          createdAt: true,
+          updatedAt: true,
+          profile: true,
+        },
+      });
+      return newUser;
     });
 
     const token = signToken({
@@ -31,6 +70,7 @@ export class AuthService {
         email: user.email,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        profile: user.profile,
       },
       token,
     };

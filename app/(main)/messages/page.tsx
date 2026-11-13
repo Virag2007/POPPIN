@@ -1,28 +1,55 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { ConversationResponse } from "@/types";
-import { ConversationItem, ChatWindow, GroupManageModal } from "@/components/messaging";
-import { MessageSquare, Plus, Users, Sparkles, X } from "lucide-react";
+import { ConversationItem, ChatWindow } from "@/components/messaging";
+import { MessageSquare, Search, Loader2 } from "lucide-react";
 
-export default function MessagesPage() {
+function MessagesContent() {
+  const { user, token } = useAuth();
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams.get("user");
+
   const [conversations, setConversations] = useState<ConversationResponse[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
-  const [showCreateGroupInput, setShowCreateGroupInput] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupMemberId, setNewGroupMemberId] = useState("");
-  const [createGroupError, setCreateGroupError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadConversations = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await fetch("/api/v1/conversations");
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && data.success && Array.isArray(data.data)) {
         setConversations(data.data);
-        if (data.data.length > 0 && !selectedConversation) {
+
+        // If targetUserId query param is passed, find or create direct conversation with them
+        if (targetUserId) {
+          const existing = data.data.find((c: ConversationResponse) =>
+            !c.isGroup && c.members.some((m) => m.userId === targetUserId)
+          );
+          if (existing) {
+            setSelectedConversation(existing);
+          } else {
+            // Initiate new direct conversation
+            try {
+              const initRes = await fetch("/api/v1/conversations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ recipientId: targetUserId }),
+              });
+              const initData = await initRes.json();
+              if (initRes.ok && initData.success && initData.data) {
+                setConversations((prev) => [initData.data, ...prev]);
+                setSelectedConversation(initData.data);
+              }
+            } catch {
+              // Ignore
+            }
+          }
+        } else if (data.data.length > 0 && !selectedConversation) {
           setSelectedConversation(data.data[0]);
         }
       }
@@ -31,131 +58,67 @@ export default function MessagesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedConversation]);
+  }, [targetUserId, selectedConversation]);
 
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
 
-  const handleCreateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newGroupName.trim() || !newGroupMemberId.trim()) return;
-
-    try {
-      setCreateGroupError(null);
-      const res = await fetch("/api/v1/groups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newGroupName.trim(),
-          memberIds: [newGroupMemberId.trim()],
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data?.error?.message || "Failed to create group");
-      }
-
-      setNewGroupName("");
-      setNewGroupMemberId("");
-      setShowCreateGroupInput(false);
-      await loadConversations();
-      setSelectedConversation(data.data);
-    } catch (err: unknown) {
-      setCreateGroupError(err instanceof Error ? err.message : "Failed to create group");
-    }
-  };
+  const filteredConversations = conversations.filter((c) => {
+    const q = searchQuery.toLowerCase();
+    const otherMember = c.members.find((m) => m.userId !== user?.id);
+    const name = otherMember?.user.displayName || otherMember?.user.username || c.name || "";
+    return name.toLowerCase().includes(q);
+  });
 
   return (
-    <main className="min-h-screen bg-slate-50/70 py-8 px-4 sm:px-6">
+    <main className="min-h-screen py-6 px-4 sm:px-6 text-[#F2F3F5]">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          {/* Sidebar / Conversation List */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex flex-col h-[680px]">
-            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-3">
+          {/* Left Panel: Direct Conversation List */}
+          <div
+            className={`bg-[#1E1F22] rounded-2xl border border-white/10 p-4 shadow-lg flex flex-col h-[700px] ${
+              selectedConversation ? "hidden md:flex" : "flex"
+            }`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-poppin-lilac" />
-                <h2 className="font-heading font-bold text-slate-900 text-sm">
-                  Messages
+                <MessageSquare className="w-4 h-4 text-[#5865F2]" />
+                <h2 className="font-bold text-white text-sm font-heading">
+                  Direct Messages
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowCreateGroupInput(!showCreateGroupInput)}
-                className="inline-flex items-center gap-1 text-xs font-bold text-poppin-lilac hover:text-poppin-navy transition px-2.5 py-1 rounded-lg hover:bg-poppin-lilac/10"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Group</span>
-              </button>
+              <span className="text-[11px] text-[#B5BAC1] font-mono">
+                {conversations.length} {conversations.length === 1 ? "chat" : "chats"}
+              </span>
             </div>
 
-            {/* Quick Group Creator Dropdown */}
-            {showCreateGroupInput && (
-              <form
-                onSubmit={handleCreateGroup}
-                className="p-3.5 mb-3 bg-slate-50 rounded-2xl text-xs space-y-2.5 border border-slate-200/80 animate-in fade-in duration-150"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-700 text-xs flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-poppin-lilac" />
-                    Create Group Hub
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateGroupInput(false)}
-                    className="text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Group Name (e.g. Design Systems Lead)"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-xs focus:outline-none focus:border-poppin-lilac"
-                />
-                <input
-                  type="text"
-                  placeholder="Initial Member User ID..."
-                  value={newGroupMemberId}
-                  onChange={(e) => setNewGroupMemberId(e.target.value)}
-                  className="w-full p-2.5 border border-slate-200 rounded-xl bg-white text-xs focus:outline-none focus:border-poppin-lilac font-mono"
-                />
-                {createGroupError && (
-                  <p className="text-red-600 text-[11px]">{createGroupError}</p>
-                )}
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateGroupInput(false)}
-                    className="px-3 py-1.5 text-slate-500 hover:text-slate-700 text-xs font-semibold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-poppin-navy text-white rounded-xl font-bold text-xs hover:bg-poppin-navy/90 transition shadow-2xs"
-                  >
-                    Create
-                  </button>
-                </div>
-              </form>
-            )}
+            {/* Conversation Search Bar */}
+            <div className="relative mb-3">
+              <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-[#383A40] text-xs text-white placeholder-zinc-500 rounded-xl border border-white/5 focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
+              />
+            </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+            {/* Conversations Scrollable List */}
+            <div className="flex-1 overflow-y-auto space-y-1 pr-1">
               {isLoading ? (
-                <div className="text-center py-16 text-xs text-slate-400">
-                  Loading chats...
+                <div className="py-20 text-center text-xs text-zinc-500">
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#5865F2]" />
+                  <span>Loading conversations...</span>
                 </div>
-              ) : conversations.length === 0 ? (
-                <div className="text-center py-16 px-4 text-xs text-slate-400">
-                  No conversations yet. Visit any creator profile to start a direct message!
+              ) : filteredConversations.length === 0 ? (
+                <div className="py-20 px-4 text-center text-xs text-[#B5BAC1] font-sans">
+                  {searchQuery ? "No matching conversations." : "No conversations yet. Visit a member's profile to send a direct message."}
                 </div>
               ) : (
-                conversations.map((conv) => (
+                filteredConversations.map((conv) => (
                   <div
                     key={conv.id}
                     onClick={() => setSelectedConversation(conv)}
@@ -171,33 +134,31 @@ export default function MessagesPage() {
             </div>
           </div>
 
-          {/* Chat Window */}
-          <div className="md:col-span-2">
+          {/* Right Panel: Active 1-on-1 Chat Window */}
+          <div
+            className={`md:col-span-2 ${
+              !selectedConversation ? "hidden md:block" : "block"
+            }`}
+          >
             {selectedConversation ? (
-              <div className="rounded-3xl overflow-hidden shadow-xs border border-slate-200/80">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#313338] h-[700px] flex flex-col">
                 <ChatWindow
                   conversation={selectedConversation}
-                  onOpenGroupManage={() => setIsGroupModalOpen(true)}
+                  currentUserId={user?.id}
+                  token={token}
+                  onBack={() => setSelectedConversation(null)}
                 />
-                {isGroupModalOpen && (
-                  <GroupManageModal
-                    conversation={selectedConversation}
-                    isOpen={isGroupModalOpen}
-                    onClose={() => setIsGroupModalOpen(false)}
-                    onGroupUpdated={loadConversations}
-                  />
-                )}
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-slate-200/80 h-[680px] shadow-xs flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-14 h-14 bg-poppin-lilac/10 text-poppin-lilac rounded-2xl flex items-center justify-center mb-4">
-                  <Sparkles className="w-7 h-7" />
+              <div className="bg-[#1E1F22] rounded-2xl border border-white/10 h-[700px] shadow-lg flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-14 h-14 bg-[#383A40] text-[#5865F2] rounded-2xl flex items-center justify-center mb-4 border border-white/10">
+                  <MessageSquare className="w-7 h-7" />
                 </div>
-                <h3 className="font-heading font-bold text-slate-900 text-base mb-1">
+                <h3 className="font-bold text-white text-base mb-1 font-heading">
                   POPPIN Direct Messaging
                 </h3>
-                <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
-                  Select a conversation on the left or create a new group hub to chat and collaborate in real-time.
+                <p className="text-xs text-[#B5BAC1] max-w-sm leading-relaxed font-sans">
+                  Select a member conversation on the left to start chatting in real time.
                 </p>
               </div>
             )}
@@ -205,5 +166,19 @@ export default function MessagesPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-zinc-500">
+          <Loader2 className="w-6 h-6 animate-spin text-[#5865F2]" />
+        </div>
+      }
+    >
+      <MessagesContent />
+    </Suspense>
   );
 }

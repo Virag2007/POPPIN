@@ -201,4 +201,83 @@ export class ConnectionRepository {
       followersCount: p.user._count.followers,
     }));
   }
+
+  static async findFollowRequest(senderId: string, receiverId: string) {
+    return prisma.followRequest.findUnique({
+      where: {
+        senderId_receiverId: {
+          senderId,
+          receiverId,
+        },
+      },
+    });
+  }
+
+  static async createFollowRequest(senderId: string, receiverId: string) {
+    return prisma.followRequest.create({
+      data: {
+        senderId,
+        receiverId,
+      },
+    });
+  }
+
+  static async deleteFollowRequest(senderId: string, receiverId: string) {
+    return prisma.followRequest.deleteMany({
+      where: {
+        senderId,
+        receiverId,
+      },
+    });
+  }
+
+  static async getPendingFollowRequests(receiverId: string) {
+    return prisma.followRequest.findMany({
+      where: { receiverId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            email: true,
+            profile: {
+              select: {
+                username: true,
+                displayName: true,
+                avatar: true,
+                headline: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  static async approveFollowRequest(receiverId: string, senderId: string) {
+    return prisma.$transaction(async (tx) => {
+      // 1. Remove the pending follow request
+      await tx.followRequest.deleteMany({
+        where: {
+          senderId,
+          receiverId,
+        },
+      });
+
+      // 2. Create the confirmed follow relationship
+      return tx.follow.upsert({
+        where: {
+          followerId_followingId: {
+            followerId: senderId,
+            followingId: receiverId,
+          },
+        },
+        create: {
+          followerId: senderId,
+          followingId: receiverId,
+        },
+        update: {},
+      });
+    });
+  }
 }

@@ -181,3 +181,12 @@ export async function runPhase7CommunitiesSearchTests() {
 
   console.log(">>> ALL PHASE 7 COMMUNITIES & SEARCH TESTS PASSED SUCCESSFULLY! <<<");
 }
+
+if (require.main === module) {
+  runPhase7CommunitiesSearchTests()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
+}

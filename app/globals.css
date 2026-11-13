@@ -1,18 +1,22 @@
-/* Hallmark Design Floor System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Unbounded:wght@300..900&display=swap');
+
+/* POPPIN Dark Blurple Design Tokens */
 :root {
-  --brand-primary: #2563EB;
-  --brand-hover: #1D4ED8;
-  --brand-light: #EFF6FF;
-  --brand-border: #BFDBFE;
-  --surface-ground: #F8FAFC;
-  --surface-card: #FFFFFF;
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  --border-subtle: #E2E8F0;
-  --focus-ring: #2563EB;
-  --bg-subtle: #F4F6F8;
-  --bg-light: #DAE0E6;
-  --text-dark: #1C1C1C;
+  --font-jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-unbounded: 'Unbounded', system-ui, sans-serif;
+  --bg-dark: #080914;
+  --surface-dark: #1E1F22;
+  --surface-elevated: #313338;
+  --surface-hover: #2B2D31;
+  --blurple-primary: #5865F2;
+  --blurple-deep: #4752C4;
+  --blurple-light: #7983F5;
+  --text-primary: #F2F3F5;
+  --text-secondary: #B5BAC1;
+  --text-muted: #949BA4;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --focus-ring: #5865F2;
 }
 
 @tailwind base;
@@ -22,24 +26,32 @@
 html, body {
   overflow-x: clip;
   scroll-behavior: smooth;
+  background-color: #080914;
+  color: #F2F3F5;
+  font-family: 'Plus Jakarta Sans', var(--font-jakarta), system-ui, sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-[#F8FAFC] text-slate-900 font-sans antialiased;
+    @apply bg-[#080914] text-[#F2F3F5] font-sans antialiased;
   }
 
   ::selection {
-    @apply bg-blue-100 text-blue-900;
+    @apply bg-[#5865F2] text-white;
   }
 
-  /* Hallmark Floor 5: Display heads carry overflow-wrap */
+  /* Display heads carry overflow-wrap and Unbounded display typography */
   h1, h2, h3, h4, h5, h6 {
     overflow-wrap: break-word;
     min-width: 0;
   }
 
-  /* Hallmark Floor 6: Instant focus-visible on interactive elements */
+  .font-display,
+  .font-heading {
+    font-family: 'Unbounded', var(--font-unbounded), system-ui, sans-serif;
+  }
+
+  /* Instant focus-visible on interactive elements */
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
@@ -50,7 +62,7 @@ html, body {
   }
 }
 
-/* Hallmark Floor 7: prefers-reduced-motion fallback */
+/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
@@ -60,21 +72,21 @@ html, body {
   }
 }
 
-/* Custom subtle scrollbar */
+/* Custom subtle monochromatic scrollbar */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #FCFBF9;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #E4E4E7;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #A1A1AA;
 }

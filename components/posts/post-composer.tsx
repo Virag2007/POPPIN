@@ -244,26 +244,26 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`bg-white rounded-xl border transition-all p-5 mb-6 relative ${
+      className={`bg-[#1E1F22] rounded-3xl border border-white/10 text-[#F2F3F5] transition-all p-5 sm:p-6 mb-6 relative shadow-lg ${
         isDragging
-          ? "border-2 border-dashed border-blue-500 bg-blue-50/40 ring-4 ring-blue-100"
-          : "border-gray-200 shadow-sm"
+          ? "border-2 border-dashed border-[#5865F2] bg-[#5865F2]/10 ring-4 ring-[#5865F2]/20"
+          : "border-white/10"
       }`}
     >
       {/* Drag & Drop Overlay Hint */}
       {isDragging && (
-        <div className="absolute inset-0 z-20 bg-blue-50/90 rounded-xl border-2 border-dashed border-blue-500 flex flex-col items-center justify-center pointer-events-none p-4 text-center">
-          <svg className="w-10 h-10 text-blue-600 animate-bounce mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="absolute inset-0 z-20 bg-[#080914]/90 rounded-3xl border-2 border-dashed border-[#5865F2] flex flex-col items-center justify-center pointer-events-none p-4 text-center">
+          <svg className="w-10 h-10 text-[#5865F2] animate-bounce mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
-          <p className="text-sm font-bold text-blue-900">Drop images here to attach</p>
-          <p className="text-xs text-blue-600 mt-1">Supports PNG, JPG, WebP, GIF up to 10MB</p>
+          <p className="text-sm font-bold text-white">Drop images here to attach</p>
+          <p className="text-xs text-zinc-400 mt-1">Supports PNG, JPG, WebP, GIF up to 10MB</p>
         </div>
       )}
       <form onSubmit={handleSubmit}>
         {/* Post Type Selector */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="text-xs font-semibold text-slate-600 mr-1">
+        <div className="flex flex-wrap items-center gap-2 mb-3.5">
+          <span className="text-xs font-semibold text-zinc-400 mr-1">
             Post type:
           </span>
           {(
@@ -278,10 +278,10 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
               key={t.id}
               type="button"
               onClick={() => setType(t.id)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                 type === t.id
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-[#5865F2] text-white shadow-md shadow-[#5865F2]/25"
+                  : "bg-[#313338] text-zinc-400 hover:text-white hover:bg-[#383A40]"
               }`}
             >
               {t.label}
@@ -290,16 +290,16 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
         </div>
 
         {/* Text Content Area */}
-        <div className="relative mb-3">
+        <div className="relative mb-3.5">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="What's poppin'? Share an update, showcase a project, or find collaborators..."
+            placeholder="Share an update, showcase project milestones, or start a discussion..."
             rows={4}
             maxLength={5000}
-            className="w-full p-3.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all placeholder:text-gray-400"
+            className="w-full p-4 text-sm text-white bg-[#141517] border border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5865F2]/20 focus:border-[#5865F2] transition-all placeholder:text-zinc-500 resize-none font-sans"
           />
-          <div className="flex justify-end text-2xs text-gray-400 mt-1">
+          <div className="flex justify-end text-[11px] font-mono text-zinc-500 mt-1">
             {content.length}/5000
           </div>
         </div>
@@ -307,26 +307,26 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
         {/* Uploaded Media Thumbnails with Display Order */}
         {media.length > 0 && (
           <div className="mb-4">
-            <span className="text-xs font-semibold text-gray-500 block mb-2">
-              Attached Media ({media.length}/10, drag or use arrows to set display order):
+            <span className="text-xs font-semibold text-zinc-400 block mb-2">
+              Attached Media ({media.length}/10):
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {media.map((item, idx) => (
                 <div
                   key={idx}
-                  className="relative aspect-video rounded-md overflow-hidden bg-gray-100 border border-gray-200 group"
+                  className="relative aspect-video rounded-xl overflow-hidden bg-[#141517] border border-white/10 group"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
-                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-white text-2xs font-semibold">
+                  <div className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-mono font-semibold">
                     #{idx + 1}
                   </div>
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                     {idx > 0 && (
                       <button
                         type="button"
                         onClick={() => handleMoveMedia(idx, idx - 1)}
-                        className="p-1 bg-white/80 rounded hover:bg-white text-gray-800 text-xs"
+                        className="p-1.5 bg-white/20 rounded-lg hover:bg-white/40 text-white text-xs"
                         title="Move left"
                       >
                         ◀
@@ -335,7 +335,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
                     <button
                       type="button"
                       onClick={() => handleRemoveMedia(idx)}
-                      className="p-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
+                      className="p-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-xs"
                       title="Remove image"
                     >
                       ✕
@@ -344,7 +344,7 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
                       <button
                         type="button"
                         onClick={() => handleMoveMedia(idx, idx + 1)}
-                        className="p-1 bg-white/80 rounded hover:bg-white text-gray-800 text-xs"
+                        className="p-1.5 bg-white/20 rounded-lg hover:bg-white/40 text-white text-xs"
                         title="Move right"
                       >
                         ▶
@@ -363,16 +363,16 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
             {links.map((link, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200 text-xs"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-[#141517] border border-white/10 text-xs text-white"
               >
                 <div className="truncate mr-2">
-                  <span className="font-semibold text-gray-800 mr-2">{link.title}</span>
-                  <span className="text-gray-400">{link.url}</span>
+                  <span className="font-semibold text-white mr-2">{link.title}</span>
+                  <span className="text-zinc-400 font-mono text-[11px]">{link.url}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleRemoveLink(idx)}
-                  className="text-gray-400 hover:text-red-600 p-1"
+                  className="text-zinc-400 hover:text-rose-400 p-1"
                 >
                   ✕
                 </button>
@@ -383,33 +383,33 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
 
         {/* Link Input Section */}
         {showLinkInput && (
-          <div className="p-3 mb-3 bg-gray-50 border border-gray-200 rounded-lg flex flex-col sm:flex-row gap-2">
+          <div className="p-3 mb-3 bg-[#141517] border border-white/10 rounded-xl flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="Link title (e.g. GitHub Repository)"
               value={newLinkTitle}
               onChange={(e) => setNewLinkTitle(e.target.value)}
-              className="p-2 text-xs border border-gray-300 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="p-2 text-xs bg-[#1E1F22] border border-white/10 text-white rounded-lg flex-1 focus:outline-none focus:ring-1 focus:ring-[#5865F2] placeholder:text-zinc-500"
             />
             <input
               type="url"
               placeholder="https://example.com"
               value={newLinkUrl}
               onChange={(e) => setNewLinkUrl(e.target.value)}
-              className="p-2 text-xs border border-gray-300 rounded flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="p-2 text-xs bg-[#1E1F22] border border-white/10 text-white rounded-lg flex-1 focus:outline-none focus:ring-1 focus:ring-[#5865F2] placeholder:text-zinc-500"
             />
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={handleAddLink}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
+                className="px-3.5 py-1.5 bg-[#5865F2] hover:bg-[#4752C4] text-white rounded-lg text-xs font-semibold"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setShowLinkInput(false)}
-                className="px-2 py-1.5 text-gray-500 hover:text-gray-700 text-xs"
+                className="px-3 py-1.5 text-zinc-400 hover:text-white text-xs"
               >
                 Cancel
               </button>
@@ -423,13 +423,13 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-50 text-blue-700 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[#8A9BFF] text-xs font-medium"
               >
                 #{tag}
                 <button
                   type="button"
                   onClick={() => handleRemoveTag(tag)}
-                  className="text-blue-400 hover:text-blue-800 ml-1 text-2xs"
+                  className="text-zinc-400 hover:text-white ml-0.5 text-xs"
                 >
                   ✕
                 </button>
@@ -451,12 +451,12 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
                 handleAddTag();
               }
             }}
-            className="p-2 text-xs border border-gray-200 rounded-lg w-64 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="p-2.5 text-xs bg-[#141517] border border-white/10 text-white rounded-xl w-64 focus:outline-none focus:ring-1 focus:ring-[#5865F2] placeholder:text-zinc-500"
           />
           <button
             type="button"
             onClick={handleAddTag}
-            className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50"
+            className="px-3.5 py-2 text-xs font-medium text-zinc-300 hover:text-white border border-white/10 rounded-xl hover:bg-white/5"
           >
             Add Tag
           </button>
@@ -464,17 +464,17 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="p-3 mb-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
+          <div className="p-3 mb-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-xl text-xs">
             {errorMessage}
           </div>
         )}
 
         {/* Action Toolbar */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-3.5 border-t border-white/10">
           <div className="flex items-center gap-2">
             {/* Image Upload Input */}
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/5 cursor-pointer transition-colors border border-white/10">
+              <svg className="w-4 h-4 text-[#8A9BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -497,9 +497,9 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
             <button
               type="button"
               onClick={() => setShowLinkInput(!showLinkInput)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors border border-white/10"
             >
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-[#8A9BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -515,9 +515,9 @@ export function PostComposer({ onPostCreated, token }: PostComposerProps) {
           <button
             type="submit"
             disabled={isSubmitting || isUploadingMedia || !content.trim()}
-            className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#5865F2] hover:bg-[#4752C4] disabled:opacity-40 text-white text-xs font-bold rounded-xl shadow-md shadow-[#5865F2]/25 transition-all cursor-pointer"
           >
-            {isSubmitting ? "Publishing..." : "Post"}
+            {isSubmitting ? "Publishing..." : "Publish Post"}
           </button>
         </div>
       </form>

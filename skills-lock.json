@@ -19,6 +19,12 @@
       "skillPath": "skills/hallmark/SKILL.md",
       "computedHash": "e5d4ee5cf0af2dcc81a23ef49b587fbfd71236ff9f9df9da12d3bf347e26e572"
     },
+    "high-end-visual-design": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/soft-skill/SKILL.md",
+      "computedHash": "35d686a6100bce47b3391e57ff69b3c5f77635728fafbd664109fbb6923f41f1"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",

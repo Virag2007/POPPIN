@@ -11,14 +11,14 @@ interface FeedTabsProps {
 
 export function FeedTabs({ activeTab, onTabChange }: FeedTabsProps) {
   return (
-    <div className="flex items-center border-b border-gray-200 bg-white rounded-t-xl mb-4">
+    <div className="flex items-center border-b border-white/10 bg-[#1E1F22] rounded-2xl mb-4 p-1">
       <button
         type="button"
         onClick={() => onTabChange("for-you")}
-        className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${
+        className={`flex-1 py-2.5 text-xs font-bold text-center rounded-xl transition-all ${
           activeTab === "for-you"
-            ? "border-blue-600 text-blue-600"
-            : "border-transparent text-gray-500 hover:text-gray-800"
+            ? "bg-[#5865F2] text-white shadow-md shadow-[#5865F2]/20"
+            : "text-[#B5BAC1] hover:text-white hover:bg-white/5"
         }`}
       >
         For You
@@ -27,10 +27,10 @@ export function FeedTabs({ activeTab, onTabChange }: FeedTabsProps) {
       <button
         type="button"
         onClick={() => onTabChange("following")}
-        className={`flex-1 py-3 text-xs font-semibold text-center border-b-2 transition-all ${
+        className={`flex-1 py-2.5 text-xs font-bold text-center rounded-xl transition-all ${
           activeTab === "following"
-            ? "border-blue-600 text-blue-600"
-            : "border-transparent text-gray-500 hover:text-gray-800"
+            ? "bg-[#5865F2] text-white shadow-md shadow-[#5865F2]/20"
+            : "text-[#B5BAC1] hover:text-white hover:bg-white/5"
         }`}
       >
         Following
@@ -38,4 +38,3 @@ export function FeedTabs({ activeTab, onTabChange }: FeedTabsProps) {
     </div>
   );
 }
-

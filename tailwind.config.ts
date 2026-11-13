@@ -9,37 +9,84 @@ export default {
   theme: {
     extend: {
       colors: {
+        canvas: "#080914",
+        blurple: {
+          DEFAULT: "#5865F2",
+          deep: "#4752C4",
+          light: "#7983F5",
+          hover: "#4752C4",
+        },
+        dark: {
+          bg: "#080914",
+          surface: "#1E1F22",
+          elevated: "#313338",
+          hover: "#2B2D31",
+          border: "#2B2D31",
+          "border-subtle": "rgba(255, 255, 255, 0.08)",
+          "border-strong": "rgba(255, 255, 255, 0.16)",
+        },
+        content: {
+          primary: "#F2F3F5",
+          secondary: "#B5BAC1",
+          muted: "#949BA4",
+        },
+        surface: {
+          DEFAULT: "#1E1F22",
+          subtle: "#313338",
+          hover: "#2B2D31",
+        },
         poppin: {
-          navy: "#0f172a",          // Slate 900
-          "navy-light": "#1e293b",    // Slate 800
-          lilac: "#2563eb",           // Crisp Blue 600
-          "lilac-hover": "#1d4ed8",   // Blue 700
-          "lilac-light": "#eff6ff",   // Blue 50
-          "lilac-border": "#bfdbfe",  // Blue 200
-          brand: "#2563eb",
-          "brand-hover": "#1d4ed8",
-          "brand-light": "#eff6ff",
-          "brand-border": "#bfdbfe",
-          ember: "#ea580c",           // Upvote Orange 600
-          "ember-light": "#fff7ed",   // Orange 50
+          navy: "#080914",
+          "navy-light": "#1E1F22",
+          lilac: "#5865F2",
+          "lilac-hover": "#4752C4",
+          "lilac-light": "#7983F5",
+          "lilac-border": "rgba(255, 255, 255, 0.12)",
+          brand: "#5865F2",
+          "brand-hover": "#4752C4",
+          "brand-light": "#7983F5",
+          "brand-border": "rgba(255, 255, 255, 0.12)",
+          ember: "#5865F2",
+          "ember-light": "#7983F5",
         },
         reddit: {
-          orange: "#FF4500",
-          upvote: "#FF4500",
-          downvote: "#6366F1",
-          bg: "#F1F5F9",
-          card: "#FFFFFF",
-          border: "#E2E8F0",
-          hover: "#F8FAFC",
-          text: "#0F172A",
-          muted: "#64748B",
+          orange: "#5865F2",
+          upvote: "#5865F2",
+          downvote: "#949BA4",
+          bg: "#080914",
+          card: "#1E1F22",
+          border: "rgba(255, 255, 255, 0.08)",
+          hover: "#313338",
+          text: "#F2F3F5",
+          muted: "#B5BAC1",
         },
       },
       fontFamily: {
-        sans: ["var(--font-jakarta)", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        display: ["var(--font-unbounded)", "system-ui", "sans-serif"],
+        sans: [
+          "'Plus Jakarta Sans'",
+          "var(--font-jakarta)",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "'Segoe UI'",
+          "Roboto",
+          "sans-serif",
+        ],
+        display: [
+          "'Unbounded'",
+          "var(--font-unbounded)",
+          "system-ui",
+          "sans-serif",
+        ],
+        heading: [
+          "'Unbounded'",
+          "var(--font-unbounded)",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       borderRadius: {
+        "xl": "12px",
         "2xl": "16px",
         "3xl": "24px",
       },

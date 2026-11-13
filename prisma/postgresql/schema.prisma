@@ -26,8 +26,10 @@ model User {
   passwordResetTokens PasswordResetToken[]
 
   // Connections (Followers & Following)
-  following Follow[] @relation("UserFollowing")
-  followers Follow[] @relation("UserFollowers")
+  following              Follow[]        @relation("UserFollowing")
+  followers              Follow[]        @relation("UserFollowers")
+  followRequestsSent     FollowRequest[] @relation("SentFollowRequests")
+  followRequestsReceived FollowRequest[] @relation("ReceivedFollowRequests")
 
   // Blocks (Blocker & Blocked)
   blockedUsers Block[] @relation("UserBlocks")
@@ -49,6 +51,7 @@ model User {
   communityMemberships   CommunityMember[]
   media                  Media[]
   messageReceipts        MessageReceipt[]
+  messageReactions       MessageReaction[]
 }
 
 model PasswordResetToken {
@@ -111,6 +114,19 @@ model Follow {
   @@unique([followerId, followingId])
   @@index([followingId])
   @@index([followerId])
+}
+
+model FollowRequest {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentFollowRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedFollowRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
 }
 
 model PrivacySettings {
@@ -176,6 +192,9 @@ model Post {
   @@index([authorId])
   @@index([communityId])
   @@index([createdAt])
+  @@index([createdAt(sort: Desc), id])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([communityId, createdAt(sort: Desc)])
 }
 
 model PostMedia {
@@ -220,6 +239,7 @@ model Comment {
   @@index([postId])
   @@index([authorId])
   @@index([replyToCommentId])
+  @@index([postId, createdAt(sort: Asc)])
 }
 
 model SavedPost {
@@ -276,6 +296,7 @@ model Message {
   deletedAt       DateTime?
   receipts        MessageReceipt[]
   attachments     MessageAttachment[]
+  reactions       MessageReaction[]
 
   @@unique([senderId, clientMessageId])
   @@index([conversationId, createdAt])
@@ -327,6 +348,7 @@ model Notification {
 
   @@index([recipientId, isRead])
   @@index([createdAt])
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
 }
 
 model Community {
@@ -344,6 +366,7 @@ model Community {
 
   members     CommunityMember[]
   posts       Post[]
+  channels    Channel[]
 
   @@index([category])
   @@index([createdAt])
@@ -382,5 +405,34 @@ model Media {
   @@index([userId])
   @@index([folder])
   @@index([createdAt])
+}
+
+model Channel {
+  id          String    @id @default(uuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  topic       String?
+  type        String    @default("TEXT") // TEXT, ANNOUNCEMENT, VOICE
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([communityId, slug])
+  @@index([communityId])
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
 }
 

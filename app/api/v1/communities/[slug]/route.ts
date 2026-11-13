@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
+import { getAuthenticatedUser } from "@/lib/auth/middleware";
 import { CommunityService } from "@/services/community.service";
 import { successResponse, handleRouteError } from "@/lib/http/response";
 
@@ -9,9 +9,9 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const viewer = await getOptionalAuthenticatedUser(request);
+    const viewer = await getAuthenticatedUser(request);
 
-    const community = await CommunityService.getCommunityBySlug(slug, viewer?.id);
+    const community = await CommunityService.getCommunityBySlug(slug, viewer.id);
     return successResponse(community, 200);
   } catch (error) {
     return handleRouteError(error);

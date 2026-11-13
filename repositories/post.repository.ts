@@ -10,6 +10,7 @@ export class PostRepository {
       const post = await tx.post.create({
         data: {
           authorId,
+          communityId: data.communityId || null,
           content: data.content,
           type: data.type,
           links: linksJson,
@@ -195,6 +196,79 @@ export class PostRepository {
     return prisma.post.delete({
       where: { id: postId },
     });
+  }
+
+  static async findByAuthorId(
+    authorId: string,
+    limit = 20,
+    cursor?: string,
+    currentUserId?: string
+  ) {
+    const take = Math.min(limit, 50);
+    const query: any = {
+      where: { authorId },
+      take: take + 1,
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          select: {
+            id: true,
+            profile: {
+              select: {
+                username: true,
+                displayName: true,
+                avatar: true,
+                headline: true,
+              },
+            },
+          },
+        },
+        community: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        media: {
+          orderBy: { order: "asc" },
+        },
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+        likes: currentUserId
+          ? {
+              where: { userId: currentUserId },
+              select: { id: true },
+            }
+          : false,
+        saves: currentUserId
+          ? {
+              where: { userId: currentUserId },
+              select: { id: true },
+            }
+          : false,
+      },
+    };
+
+    if (cursor) {
+      query.cursor = { id: cursor };
+      query.skip = 1;
+    }
+
+    const items = await prisma.post.findMany(query);
+    const hasMore = items.length > take;
+    const records = hasMore ? items.slice(0, take) : items;
+    const nextCursor = hasMore ? records[records.length - 1]?.id || null : null;
+
+    return {
+      items: records,
+      hasMore,
+      nextCursor,
+    };
   }
 }
 

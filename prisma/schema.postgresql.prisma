@@ -176,6 +176,9 @@ model Post {
   @@index([authorId])
   @@index([communityId])
   @@index([createdAt])
+  @@index([createdAt(sort: Desc), id])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([communityId, createdAt(sort: Desc)])
 }
 
 model PostMedia {
@@ -220,6 +223,7 @@ model Comment {
   @@index([postId])
   @@index([authorId])
   @@index([replyToCommentId])
+  @@index([postId, createdAt(sort: Asc)])
 }
 
 model SavedPost {
@@ -327,6 +331,7 @@ model Notification {
 
   @@index([recipientId, isRead])
   @@index([createdAt])
+  @@index([recipientId, isRead, createdAt(sort: Desc)])
 }
 
 model Community {

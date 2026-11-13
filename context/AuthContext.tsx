@@ -91,6 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (authToken: string, authUser: { id: string; email: string }) => {
     localStorage.setItem("poppin_jwt", authToken);
+    // Ensure document.cookie is synced for client-side navigation
+    if (typeof document !== "undefined") {
+      document.cookie = `poppin_token=${authToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+    }
     setToken(authToken);
     setUser(authUser);
     fetchProfile(authToken);
@@ -103,6 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore
     } finally {
       localStorage.removeItem("poppin_jwt");
+      if (typeof document !== "undefined") {
+        document.cookie = "poppin_token=; path=/; max-age=0";
+      }
       setToken(null);
       setUser(null);
       setProfile(null);

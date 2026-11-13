@@ -9,10 +9,37 @@ const passwordSchema = z
     "Password cannot exceed 72 bytes in UTF-8 encoding (bcrypt limitation)"
   );
 
-export const registerSchema = z.object({
-  email: z.string().email("Invalid email address").max(255, "Email address cannot exceed 255 characters").toLowerCase().trim(),
-  password: passwordSchema,
-});
+export const registerSchema = z
+  .object({
+    email: z
+      .string()
+      .email("Invalid email address")
+      .max(255, "Email address cannot exceed 255 characters")
+      .toLowerCase()
+      .trim(),
+    password: passwordSchema,
+    confirmPassword: z.string().optional(),
+    name: z.string().min(1, "Name is required").max(60).optional(),
+    displayName: z.string().min(1).max(60).optional(),
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(30, "Username cannot exceed 30 characters")
+      .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores")
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.confirmPassword && data.password !== data.confirmPassword) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Passwords do not match",
+      path: ["confirmPassword"],
+    }
+  );
 
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address").max(255, "Email address cannot exceed 255 characters").toLowerCase().trim(),

@@ -12,7 +12,7 @@ import {
   PostMediaItem,
 } from "@/types";
 
-interface PostDbRecord {
+export interface PostDbRecord {
   id: string;
   authorId: string;
   author: {
@@ -64,7 +64,7 @@ export class PostService {
     return Array.from(new Set(cleaned));
   }
 
-  private static mapPostToResponse(
+  public static mapPostToResponse(
     post: PostDbRecord,
     currentUserId?: string
   ): PostResponse {
@@ -226,5 +226,35 @@ export class PostService {
 
     const storage = getStorageProvider();
     return storage.upload(fileBuffer, fileName, normalizedMime);
+  }
+
+  static async getPostsByAuthor(
+    authorId: string,
+    viewerId: string,
+    limit = 20,
+    cursor?: string
+  ) {
+    // Check bidirectional blocking if viewer is not author
+    if (viewerId !== authorId) {
+      const isBlocked = await ConnectionRepository.isBlockedOrBlocking(viewerId, authorId);
+      if (isBlocked) {
+        throw new AppError("Account unavailable", 403, "BLOCKED_USER");
+      }
+
+      const privacy = await AccountRepository.getPrivacySettings(authorId);
+      if (privacy && privacy.isPrivate) {
+        const isFollowing = await ConnectionRepository.findFollow(viewerId, authorId);
+        if (!isFollowing) {
+          throw new AppError("This account is private. Follow to view posts.", 403, "PRIVATE_ACCOUNT");
+        }
+      }
+    }
+
+    const result = await PostRepository.findByAuthorId(authorId, limit, cursor, viewerId);
+    return {
+      items: result.items.map((p) => PostService.mapPostToResponse(p as unknown as PostDbRecord, viewerId)),
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
+    };
   }
 }

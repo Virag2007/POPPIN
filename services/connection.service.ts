@@ -23,6 +23,26 @@ export class ConnectionService {
       throw new AppError("You are already following this user", 409, "ALREADY_FOLLOWING");
     }
 
+    // If target account is private, create a follow request instead of confirmed follow
+    if (targetUser.privacySettings?.isPrivate) {
+      const existingRequest = await ConnectionRepository.findFollowRequest(currentUserId, targetUserId);
+      if (existingRequest) {
+        return {
+          isFollowing: false,
+          isRequested: true,
+          status: "REQUESTED",
+        };
+      }
+
+      await ConnectionRepository.createFollowRequest(currentUserId, targetUserId);
+      return {
+        isFollowing: false,
+        isRequested: true,
+        status: "REQUESTED",
+      };
+    }
+
+    // Public profile -> direct follow
     const follow = await ConnectionRepository.createFollow(currentUserId, targetUserId);
     const counts = await ConnectionRepository.getFollowCounts(currentUserId);
 
@@ -36,8 +56,19 @@ export class ConnectionService {
 
     return {
       isFollowing: true,
+      isRequested: false,
+      status: "FOLLOWING",
       followEvent,
       currentUserCounts: counts,
+    };
+  }
+
+  static async cancelFollowRequest(currentUserId: string, targetUserId: string) {
+    await ConnectionRepository.deleteFollowRequest(currentUserId, targetUserId);
+    return {
+      isFollowing: false,
+      isRequested: false,
+      status: "NONE",
     };
   }
 
@@ -51,9 +82,16 @@ export class ConnectionService {
       throw new AppError("Target user not found", 404, "USER_NOT_FOUND");
     }
 
+    // Also cancel any pending follow request if applicable
+    await ConnectionRepository.deleteFollowRequest(currentUserId, targetUserId);
+
     const existing = await ConnectionRepository.findFollow(currentUserId, targetUserId);
     if (!existing) {
-      throw new AppError("You are not following this user", 404, "NOT_FOLLOWING");
+      return {
+        isFollowing: false,
+        isRequested: false,
+        status: "NONE",
+      };
     }
 
     await ConnectionRepository.deleteFollow(currentUserId, targetUserId);
@@ -61,8 +99,75 @@ export class ConnectionService {
 
     return {
       isFollowing: false,
+      isRequested: false,
+      status: "NONE",
       currentUserCounts: counts,
     };
+  }
+
+  static async getFollowStatus(currentUserId: string, targetUserId: string) {
+    if (currentUserId === targetUserId) {
+      return { isFollowing: false, isRequested: false, isSelf: true, isBlocked: false };
+    }
+
+    const isBlocked = await ConnectionRepository.isBlockedOrBlocking(currentUserId, targetUserId);
+    if (isBlocked) {
+      return { isFollowing: false, isRequested: false, isSelf: false, isBlocked: true };
+    }
+
+    const [follow, request] = await Promise.all([
+      ConnectionRepository.findFollow(currentUserId, targetUserId),
+      ConnectionRepository.findFollowRequest(currentUserId, targetUserId),
+    ]);
+
+    return {
+      isFollowing: !!follow,
+      isRequested: !!request,
+      isSelf: false,
+      isBlocked: false,
+    };
+  }
+
+  static async getPendingFollowRequests(userId: string) {
+    const requests = await ConnectionRepository.getPendingFollowRequests(userId);
+    return requests.map((req) => ({
+      id: req.id,
+      senderId: req.senderId,
+      createdAt: req.createdAt,
+      sender: {
+        id: req.sender.id,
+        email: req.sender.email,
+        username: req.sender.profile?.username || "unknown",
+        displayName: req.sender.profile?.displayName || null,
+        avatar: req.sender.profile?.avatar || null,
+        headline: req.sender.profile?.headline || null,
+      },
+    }));
+  }
+
+  static async approveFollowRequest(userId: string, senderId: string) {
+    const existing = await ConnectionRepository.findFollowRequest(senderId, userId);
+    if (!existing) {
+      throw new AppError("Follow request not found or already processed", 404, "NOT_FOUND");
+    }
+
+    await ConnectionRepository.approveFollowRequest(userId, senderId);
+    return { success: true, message: "Follow request approved" };
+  }
+
+  static async rejectFollowRequest(userId: string, senderId: string) {
+    await ConnectionRepository.deleteFollowRequest(senderId, userId);
+    return { success: true, message: "Follow request rejected" };
+  }
+
+  static async removeFollower(userId: string, followerId: string) {
+    const existing = await ConnectionRepository.findFollow(followerId, userId);
+    if (!existing) {
+      throw new AppError("User is not following you", 404, "NOT_FOUND");
+    }
+
+    await ConnectionRepository.deleteFollow(followerId, userId);
+    return { success: true, message: "Follower removed" };
   }
 
   static async getFollowers(userId: string, limit = 20, offset = 0, viewerId?: string) {

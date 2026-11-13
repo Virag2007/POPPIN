@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React from "react";
@@ -9,19 +10,19 @@ import { MessageList } from "./MessageList";
 import { MessageInput } from "./MessageInput";
 import { TypingIndicator } from "./TypingIndicator";
 import { OnlineIndicator } from "./OnlineIndicator";
-import { Users, Settings, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, User } from "lucide-react";
 
 interface ChatWindowProps {
   conversation: ConversationResponse;
   currentUserId?: string;
   token?: string | null;
-  onOpenGroupManage?: () => void;
+  onBack?: () => void;
 }
 
 export function ChatWindow({
   conversation,
   currentUserId = "",
-  onOpenGroupManage,
+  onBack,
 }: ChatWindowProps) {
   // 1. Socket.IO Room Lifecycle
   const { joinError } = useConversation(conversation.id);
@@ -34,73 +35,59 @@ export function ChatWindow({
   const { isUserOnline, typingUsers, startTyping, stopTyping } =
     usePresence(conversation.id);
 
-  // Find other partner for 1-on-1 direct conversations
+  // Find partner for 1-on-1 direct conversation
   const otherMember = conversation.members.find((m) => m.userId !== currentUserId);
-  const displayName = conversation.isGroup
-    ? conversation.name || "Group Discussion"
-    : otherMember?.user.displayName || otherMember?.user.username || "Direct Chat";
-  const avatar = conversation.isGroup ? conversation.avatar : otherMember?.user.avatar;
-  const isPartnerOnline = !conversation.isGroup && otherMember ? isUserOnline(otherMember.userId) : false;
+  const displayName = otherMember?.user.displayName || otherMember?.user.username || "Direct Message";
+  const username = otherMember?.user.username || "user";
+  const avatar = otherMember?.user.avatar;
+  const isPartnerOnline = otherMember ? isUserOnline(otherMember.userId) : false;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50/50">
+    <div className="flex-1 flex flex-col h-full bg-[#313338] text-[#F2F3F5]">
       {/* Header Bar */}
-      <div className="px-5 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between shadow-2xs z-10">
+      <div className="px-5 py-3.5 bg-[#2B2D31] border-b border-white/10 flex items-center justify-between shadow-md z-10">
         <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="md:hidden p-1.5 -ml-1 text-zinc-400 hover:text-white rounded-lg hover:bg-[#383A40] transition"
+              aria-label="Back to conversations"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+
           <div className="relative">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 border border-slate-200">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#383A40] border border-white/10">
               {avatar ? (
                 <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-bold text-xs text-slate-500 bg-slate-100">
-                  {conversation.isGroup ? <Users className="w-4 h-4 text-slate-400" /> : displayName[0]?.toUpperCase()}
+                <div className="w-full h-full flex items-center justify-center font-bold text-xs text-white bg-[#383A40] font-heading">
+                  {displayName[0]?.toUpperCase() || <User className="w-4 h-4 text-zinc-400" />}
                 </div>
               )}
             </div>
-            {!conversation.isGroup && (
-              <div className="absolute -bottom-0.5 -right-0.5">
-                <OnlineIndicator isOnline={isPartnerOnline} size="sm" />
-              </div>
-            )}
+            <div className="absolute -bottom-0.5 -right-0.5">
+              <OnlineIndicator isOnline={isPartnerOnline} size="sm" />
+            </div>
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-900">{displayName}</h2>
-              {conversation.isGroup && (
-                <span className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                  {conversation.members.length} members
-                </span>
-              )}
+              <h2 className="text-sm font-bold text-white font-heading">{displayName}</h2>
+              <span className="text-xs text-zinc-400 font-mono">@{username}</span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">
-              {conversation.isGroup
-                ? `${conversation.members.length} participants in room`
-                : isPartnerOnline
-                ? "Active now"
-                : "Offline"}
+            <p className="text-[11px] text-[#B5BAC1] font-medium font-sans">
+              {isPartnerOnline ? "Active now" : "Offline"}
             </p>
           </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {conversation.isGroup && onOpenGroupManage && (
-            <button
-              type="button"
-              onClick={onOpenGroupManage}
-              className="p-2 text-slate-500 hover:text-poppin-lilac hover:bg-slate-100 rounded-xl transition"
-              title="Manage group"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          )}
         </div>
       </div>
 
       {/* Join Error Banner */}
       {joinError && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs font-semibold text-amber-800">
+        <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs font-semibold text-amber-300">
           ⚠️ {joinError}
         </div>
       )}
@@ -108,7 +95,7 @@ export function ChatWindow({
       {/* Messages Scroll Area */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-poppin-lilac animate-spin" />
+          <Loader2 className="w-6 h-6 text-[#5865F2] animate-spin" />
         </div>
       ) : (
         <MessageList

@@ -46,7 +46,7 @@ export function PostDetail({ initialPost, currentUserId, token }: PostDetailProp
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-semibold text-slate-600 hover:text-poppin-navy hover:bg-slate-50 transition shadow-2xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E4E4E7] text-xs font-semibold text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Feed</span>
@@ -71,7 +71,7 @@ export function PostDetail({ initialPost, currentUserId, token }: PostDetailProp
       />
 
       {/* Comment Section with 1-Level Replies */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs mt-6">
+      <div className="bg-white rounded-3xl p-6 border border-[#E4E4E7] shadow-xs mt-6">
         <CommentSection
           postId={post.id}
           currentUserId={currentUserId}

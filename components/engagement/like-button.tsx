@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Heart } from "lucide-react";
 
 interface LikeButtonProps {
   postId: string;
@@ -68,29 +69,20 @@ export function LikeButton({
       type="button"
       onClick={toggleLike}
       disabled={isLoading}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
         isLiked
-          ? "text-red-600 bg-red-50 hover:bg-red-100"
-          : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+          ? "text-[#09090B] bg-zinc-100"
+          : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
       }`}
       title={isLiked ? "Unlike post" : "Like post"}
       aria-label={isLiked ? "Unlike post" : "Like post"}
     >
-      <svg
-        className={`w-4 h-4 transition-transform active:scale-125 ${
-          isLiked ? "fill-red-600 stroke-red-600" : "fill-none stroke-current"
+      <Heart
+        className={`w-3.5 h-3.5 transition-transform active:scale-125 ${
+          isLiked ? "fill-zinc-950 stroke-zinc-950" : "fill-none stroke-current"
         }`}
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-        />
-      </svg>
+      />
       <span>{count}</span>
     </button>
   );
 }
-

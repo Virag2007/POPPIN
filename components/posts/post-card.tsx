@@ -12,7 +12,7 @@ import {
   Pencil,
   Trash2,
   ExternalLink,
-  Sparkles,
+  Zap,
   Flame,
   Award,
   HelpCircle,
@@ -32,22 +32,22 @@ const POST_TYPE_CONFIG: Record<
 > = {
   UPDATE: {
     label: "Update",
-    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-    icon: Sparkles,
+    badgeClass: "bg-[#5865F2]/10 text-[#8A9BFF] border-[#5865F2]/30",
+    icon: Zap,
   },
   PROJECT_SHOWCASE: {
     label: "Project Showcase",
-    badgeClass: "bg-poppin-lilac/10 text-poppin-lilac border-poppin-lilac/20 font-bold",
+    badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/30 font-bold",
     icon: Flame,
   },
   ACHIEVEMENT: {
     label: "Achievement",
-    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 font-bold",
+    badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30 font-bold",
     icon: Award,
   },
   LOOKING_FOR: {
     label: "Looking for...",
-    badgeClass: "bg-amber-50 text-amber-700 border-amber-200 font-bold",
+    badgeClass: "bg-purple-500/10 text-purple-300 border-purple-500/30 font-bold",
     icon: HelpCircle,
   },
 };
@@ -93,7 +93,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
   });
 
   return (
-    <article className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all p-5 sm:p-6 mb-4">
+    <article className="bg-[#1E1F22] rounded-3xl border border-white/10 hover:border-white/20 transition-all p-5 sm:p-6 mb-4 text-[#F2F3F5] shadow-lg">
       {/* Header */}
       <div className="flex items-start justify-between mb-3.5">
         <div className="flex items-center gap-3">
@@ -102,10 +102,10 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
             <img
               src={post.author.avatar}
               alt={post.author.displayName || post.author.username}
-              className="w-10 h-10 rounded-2xl object-cover ring-2 ring-slate-100"
+              className="w-10 h-10 rounded-2xl object-cover ring-1 ring-white/10"
             />
           ) : (
-            <div className="w-10 h-10 rounded-2xl bg-poppin-lilac-light text-poppin-lilac border border-poppin-lilac-border flex items-center justify-center font-bold text-xs font-mono">
+            <div className="w-10 h-10 rounded-2xl bg-[#313338] text-[#8A9BFF] border border-white/10 flex items-center justify-center font-bold text-xs font-mono">
               {authorInitials}
             </div>
           )}
@@ -113,16 +113,16 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
             <div className="flex items-center gap-2">
               <Link
                 href={`/profiles/${encodeURIComponent(post.author.username)}`}
-                className="font-heading font-bold text-slate-900 hover:text-poppin-lilac transition text-sm"
+                className="font-heading font-bold text-white hover:text-[#8A9BFF] transition text-sm"
               >
                 {post.author.displayName || post.author.username}
               </Link>
-              <span className="text-slate-400 font-mono text-xs">@{post.author.username}</span>
+              <span className="text-zinc-400 font-mono text-xs">@{post.author.username}</span>
             </div>
             {post.author.headline && (
-              <p className="text-xs text-slate-500 line-clamp-1">{post.author.headline}</p>
+              <p className="text-xs text-zinc-400 line-clamp-1">{post.author.headline}</p>
             )}
-            <span className="text-[11px] text-slate-400 font-mono">{formattedDate}</span>
+            <span className="text-[11px] text-zinc-500 font-mono">{formattedDate}</span>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
                 <button
                   type="button"
                   onClick={() => onEdit(post)}
-                  className="p-1.5 text-slate-400 hover:text-poppin-navy rounded-lg hover:bg-slate-100 transition text-xs"
+                  className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition text-xs"
                   title="Edit post"
                   aria-label="Edit post"
                 >
@@ -154,7 +154,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition text-xs disabled:opacity-50"
+                  className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-white/10 transition text-xs disabled:opacity-50"
                   title="Delete post"
                   aria-label="Delete post"
                 >
@@ -167,7 +167,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
       </div>
 
       {/* Content */}
-      <div className="text-slate-800 text-sm whitespace-pre-line leading-relaxed mb-4">
+      <div className="text-zinc-200 text-sm whitespace-pre-line leading-relaxed mb-4 font-sans">
         {post.content}
       </div>
 
@@ -185,7 +185,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {post.media.map((item) => (
             <div
               key={item.id}
-              className="relative aspect-video bg-slate-100 rounded-xl overflow-hidden group border border-slate-200/80"
+              className="relative aspect-video bg-[#141517] rounded-xl overflow-hidden group border border-white/10"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -208,13 +208,13 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-xs transition group"
+              className="flex items-center gap-2 p-2.5 rounded-xl bg-[#141517] hover:bg-[#25272B] border border-white/10 text-xs transition group"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-poppin-lilac shrink-0" />
-              <span className="font-semibold text-slate-800 group-hover:text-poppin-lilac line-clamp-1">
+              <ExternalLink className="w-3.5 h-3.5 text-[#8A9BFF] shrink-0" />
+              <span className="font-semibold text-white group-hover:text-[#8A9BFF] line-clamp-1">
                 {link.title}
               </span>
-              <span className="text-slate-400 ml-auto font-mono text-[10px] truncate max-w-xs">
+              <span className="text-zinc-400 ml-auto font-mono text-[10px] truncate max-w-xs">
                 {link.url}
               </span>
             </a>
@@ -228,7 +228,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {post.tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-poppin-lilac-light text-poppin-navy border border-poppin-lilac-border hover:bg-poppin-lilac/20 transition-colors"
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/5 text-[#B5BAC1] border border-white/10 hover:bg-white/10 transition-colors"
             >
               #{tag}
             </span>
@@ -237,7 +237,7 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
       )}
 
       {/* Footer / Interaction Bar */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500">
+      <div className="flex items-center justify-between pt-3 border-t border-white/10 text-xs text-zinc-400">
         <div className="flex items-center gap-3">
           {/* Like Button */}
           <LikeButton
@@ -250,9 +250,9 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           {/* Comments Button */}
           <Link
             href={`/posts/${post.id}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-poppin-navy hover:bg-slate-100 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white hover:bg-white/10 transition"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+            <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
             <span>{post.commentsCount}</span>
           </Link>
 
@@ -269,17 +269,17 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-slate-600 hover:text-poppin-navy hover:bg-slate-100 transition text-xs font-semibold"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition text-xs font-semibold"
             title="Copy share link"
           >
             {copiedShare ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-emerald-700">Copied!</span>
+                <Check className="w-3.5 h-3.5 text-[#5865F2]" />
+                <span className="text-[#5865F2]">Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                <Share2 className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Share</span>
               </>
             )}

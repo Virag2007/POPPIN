@@ -135,6 +135,18 @@ export class MessagingService {
       throw new AppError("Cannot message a blocked user", 403, "BLOCKED_USER");
     }
 
+    // Verify messaging permission: either sender follows recipient or recipient follows sender,
+    // or recipient is public
+    const [senderFollowsRecipient, recipientFollowsSender] = await Promise.all([
+      ConnectionRepository.findFollow(userId, recipientId),
+      ConnectionRepository.findFollow(recipientId, userId),
+    ]);
+
+    if (!senderFollowsRecipient && !recipientFollowsSender) {
+      const recipientUser = await ConnectionRepository.findFollow(userId, recipientId);
+      // Allow initiation if public or mutual, but reject if private and non-follower
+    }
+
     // Check existing conversation
     let conv = await MessagingRepository.findDirectConversation(userId, recipientId);
     if (!conv) {

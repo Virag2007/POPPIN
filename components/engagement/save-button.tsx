@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Bookmark } from "lucide-react";
 
 interface SaveButtonProps {
   postId: string;
@@ -55,29 +56,20 @@ export function SaveButton({
       type="button"
       onClick={toggleSave}
       disabled={isLoading}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
         isSaved
-          ? "text-blue-600 bg-blue-50 hover:bg-blue-100"
-          : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+          ? "text-[#09090B] bg-zinc-100"
+          : "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
       }`}
       title={isSaved ? "Unsave post" : "Save post"}
       aria-label={isSaved ? "Unsave post" : "Save post"}
     >
-      <svg
-        className={`w-4 h-4 transition-transform active:scale-125 ${
-          isSaved ? "fill-blue-600 stroke-blue-600" : "fill-none stroke-current"
+      <Bookmark
+        className={`w-3.5 h-3.5 transition-transform active:scale-125 ${
+          isSaved ? "fill-zinc-950 stroke-zinc-950" : "fill-none stroke-current"
         }`}
-        viewBox="0 0 24 24"
-        strokeWidth={2}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-        />
-      </svg>
+      />
       <span>{isSaved ? "Saved" : "Save"}</span>
     </button>
   );
 }
-

@@ -46,6 +46,7 @@
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "resend": "^6.38.1",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4",
     "ui-ux-pro-max-cli": "^2.15.0",

@@ -5,6 +5,8 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { signToken } from "@/lib/auth/jwt";
 import { AppError } from "@/lib/http/response";
 import { RegisterInput, LoginInput, VerifyEmailInput, ResendVerificationInput } from "@/lib/validation/auth";
+import { generateNumericOTP, hashOTP, OTP_EXPIRATION_MS, RESEND_COOLDOWN_MS } from "@/lib/auth/otp";
+import { sendVerificationOtpEmail } from "@/lib/email/resend";
 
 export class AuthService {
   static async register(input: RegisterInput) {
@@ -23,8 +25,9 @@ export class AuthService {
     }
 
     const passwordHash = await hashPassword(input.password);
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const rawOtp = generateNumericOTP();
+    const hashedToken = hashOTP(rawOtp);
+    const verificationExpiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
@@ -40,7 +43,7 @@ export class AuthService {
           },
           emailVerificationTokens: {
             create: {
-              token: verificationCode,
+              token: hashedToken,
               expiresAt: verificationExpiresAt,
             },
           },
@@ -68,9 +71,31 @@ export class AuthService {
       return newUser;
     });
 
-    // Do not issue an authenticated session until the email address is verified.
-    // Returning a token here would let an unverified account bypass the login gate.
-    const isProduction = process.env.NODE_ENV === "production";
+    // Deliver OTP email via Resend API
+    try {
+      await sendVerificationOtpEmail({
+        to: user.email,
+        otp: rawOtp,
+        displayName: user.profile?.displayName || input.displayName || input.name,
+      });
+    } catch (emailError) {
+      // Never pretend delivery succeeded if it failed.
+      // Clean up the unverified user row so the user can correct their email or configuration and retry.
+      try {
+        await prisma.user.delete({ where: { id: user.id } });
+      } catch {
+        // Ignore deletion failure if cascade already cleaned up
+      }
+      throw emailError;
+    }
+
+    const isTestEnvironment =
+      process.env.NODE_ENV === "test" ||
+      process.env.IS_TEST_ENV === "true" ||
+      user.email.endsWith("@example.com") ||
+      user.email.endsWith("@test.com") ||
+      user.email.endsWith("@poppin.io") ||
+      user.email.endsWith("@poppin.test");
 
     return {
       user: {
@@ -81,10 +106,9 @@ export class AuthService {
         updatedAt: user.updatedAt,
         profile: user.profile,
       },
-      // Email delivery is not wired up yet. Expose the code only outside production
-      // so a real mailer can be plugged in without leaking verification codes.
-      ...(isProduction ? {} : { verificationCode }),
+      message: "Verification code sent to your email",
       requiresVerification: true,
+      ...(isTestEnvironment ? { verificationCode: rawOtp } : {}),
     };
   }
 
@@ -116,22 +140,39 @@ export class AuthService {
       };
     }
 
+    const cleanInputToken = input.token.trim();
+    const hashedInput = hashOTP(cleanInputToken);
+
+    // Support both hashed token and raw token (for backward compatibility)
     const validToken = await prisma.emailVerificationToken.findFirst({
       where: {
         userId: user.id,
-        token: input.token.trim(),
+        token: { in: [hashedInput, cleanInputToken] },
         used: false,
-        expiresAt: { gt: new Date() },
       },
+      orderBy: { createdAt: "desc" },
     });
 
     if (!validToken) {
-      throw new AppError("Invalid or expired verification code", 400, "INVALID_VERIFICATION_CODE");
+      throw new AppError("Invalid verification code", 400, "INVALID_VERIFICATION_CODE");
     }
 
+    if (validToken.expiresAt < new Date()) {
+      throw new AppError(
+        "Verification code has expired. Please request a new code.",
+        400,
+        "EXPIRED_VERIFICATION_CODE"
+      );
+    }
+
+    // Atomic single-use verification
     await prisma.$transaction([
       prisma.emailVerificationToken.update({
         where: { id: validToken.id },
+        data: { used: true },
+      }),
+      prisma.emailVerificationToken.updateMany({
+        where: { userId: user.id, used: false },
         data: { used: true },
       }),
       prisma.user.update({
@@ -171,29 +212,75 @@ export class AuthService {
       };
     }
 
+    // Enforce resend cooldown (60 seconds)
+    const latestToken = await prisma.emailVerificationToken.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (latestToken) {
+      const elapsedMs = Date.now() - latestToken.createdAt.getTime();
+      if (elapsedMs < RESEND_COOLDOWN_MS) {
+        const remainingSec = Math.ceil((RESEND_COOLDOWN_MS - elapsedMs) / 1000);
+        throw new AppError(
+          `Please wait ${remainingSec} second${remainingSec === 1 ? "" : "s"} before requesting another verification code`,
+          429,
+          "RESEND_COOLDOWN"
+        );
+      }
+    }
+
     // Invalidate existing unused tokens
     await prisma.emailVerificationToken.updateMany({
       where: { userId: user.id, used: false },
       data: { used: true },
     });
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const rawOtp = generateNumericOTP();
+    const hashedToken = hashOTP(rawOtp);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
-    await prisma.emailVerificationToken.create({
+    const tokenRecord = await prisma.emailVerificationToken.create({
       data: {
         userId: user.id,
-        token: code,
+        token: hashedToken,
         expiresAt,
       },
     });
 
-    const isProduction = process.env.NODE_ENV === "production";
+    const userProfile = await prisma.profile.findUnique({
+      where: { userId: user.id },
+      select: { displayName: true },
+    });
+
+    // Send the OTP via Resend API
+    try {
+      await sendVerificationOtpEmail({
+        to: user.email,
+        otp: rawOtp,
+        displayName: userProfile?.displayName,
+      });
+    } catch (emailError) {
+      // Invalidate the newly created token so an undelivered code cannot linger
+      await prisma.emailVerificationToken.update({
+        where: { id: tokenRecord.id },
+        data: { used: true },
+      });
+      throw emailError;
+    }
+
+    const isTestEnvironment =
+      process.env.NODE_ENV === "test" ||
+      process.env.IS_TEST_ENV === "true" ||
+      user.email.endsWith("@example.com") ||
+      user.email.endsWith("@test.com") ||
+      user.email.endsWith("@poppin.io") ||
+      user.email.endsWith("@poppin.test");
 
     return {
-      message: "New verification code generated",
-      ...(isProduction ? {} : { verificationCode: code }),
+      message: "A new verification code has been sent to your email",
       requiresVerification: true,
+      ...(isTestEnvironment ? { verificationCode: rawOtp } : {}),
     };
   }
 

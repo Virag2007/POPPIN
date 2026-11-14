@@ -302,7 +302,7 @@ function RegisterForm() {
 
               {resendSuccess && (
                 <p className="text-xs text-emerald-400 text-center font-medium">
-                  A fresh verification code has been generated!
+                  A fresh verification code has been sent to your email!
                 </p>
               )}
 

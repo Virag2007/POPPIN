@@ -16,3 +16,4 @@ export async function GET(
     return handleRouteError(error);
   }
 }
+

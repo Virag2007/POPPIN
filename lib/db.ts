@@ -7,10 +7,14 @@ declare global {
 
 /**
  * Resolves the active database connection URL.
- * Supports pooled PostgreSQL (DATABASE_URL) and local SQLite (SQLITE_DATABASE_URL).
+ * Supports pooled PostgreSQL (DATABASE_URL / POSTGRES_PRISMA_URL) and local SQLite (SQLITE_DATABASE_URL).
  */
 export function resolveDatabaseUrl(): string {
-  const rawUrl = process.env.DATABASE_URL || process.env.SQLITE_DATABASE_URL;
+  const rawUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.SQLITE_DATABASE_URL;
+
   if (!rawUrl) {
     throw new Error(
       "Database connection URL is not configured. Please set DATABASE_URL (for PostgreSQL) or SQLITE_DATABASE_URL (for SQLite) in your environment variables."
@@ -72,11 +76,50 @@ function createPrismaClient(): PrismaClient {
   }) as unknown as PrismaClient;
 }
 
-export const prisma = global.prisma || createPrismaClient();
+// Lazy initialization cache to protect build-time module evaluation
+let clientInstance: PrismaClient | undefined;
 
-if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
+export function getPrismaClient(): PrismaClient {
+  if (global.prisma) {
+    return global.prisma;
+  }
+  if (!clientInstance) {
+    clientInstance = createPrismaClient();
+    if (process.env.NODE_ENV !== "production") {
+      global.prisma = clientInstance;
+    }
+  }
+  return clientInstance;
 }
 
-export default prisma;
+// Non-invoking properties that Next.js / React / bundlers inspect during build time
+const IGNORED_PROPS = new Set([
+  "then",
+  "catch",
+  "finally",
+  "$$typeof",
+  "toJSON",
+  "valueOf",
+  "toString",
+]);
 
+/**
+ * Proxy-based Prisma client export.
+ * Defers client creation and database URL validation until first actual runtime query/access.
+ * This prevents build-time module evaluation failures while strictly enforcing validation at runtime.
+ */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    if (typeof prop === "string" && IGNORED_PROPS.has(prop)) {
+      return undefined;
+    }
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, receiver);
+    if (typeof value === "function") {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
+
+export default prisma;

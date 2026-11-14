@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/db";
 import { AppError } from "@/lib/http/response";
 import { checkOwnership } from "@/lib/auth/middleware";
 import { PostRepository } from "@/repositories/post.repository";
@@ -184,12 +185,32 @@ export class PostService {
   }
 
   static async deletePost(postId: string, userId: string): Promise<{ success: true; message: string }> {
-    const authorId = await PostRepository.findAuthorId(postId);
-    if (!authorId) {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true, communityId: true },
+    });
+    if (!post) {
       throw new AppError("Post not found", 404, "NOT_FOUND");
     }
 
-    checkOwnership(authorId, userId, "You do not have permission to delete this post");
+    let isAuthorized = post.authorId === userId;
+    if (!isAuthorized && post.communityId) {
+      const membership = await prisma.communityMember.findUnique({
+        where: {
+          communityId_userId: {
+            communityId: post.communityId,
+            userId,
+          },
+        },
+      });
+      if (membership && ["ADMIN", "MODERATOR", "OWNER"].includes(membership.role)) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      throw new AppError("You do not have permission to delete this post", 403, "FORBIDDEN");
+    }
 
     // Retrieve storage keys to clean up images and avoid orphaning media
     const mediaKeys = await PostRepository.findMediaKeysByPostId(postId);

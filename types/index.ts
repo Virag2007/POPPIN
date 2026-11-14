@@ -123,6 +123,8 @@ export interface Community {
   coverImage: string;
   membersCount: number;
   isMember?: boolean;
+  currentUserRole?: "ADMIN" | "MODERATOR" | "MEMBER" | null;
+  isOwnerOrMod?: boolean;
   rules: string[];
   moderators: Array<{
     id: string;

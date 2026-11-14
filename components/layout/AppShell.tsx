@@ -13,13 +13,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
 
-  // Check if current page belongs to the public unauthenticated shell
+  // Check if current page belongs to the public unauthenticated shell or focused onboarding flow
   const isPublicRoute =
     pathname === "/" ||
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
     pathname === "/reset-password";
+
+  // Focused Onboarding Shell (No distracting sidebars, topbars, or navigation links)
+  if (pathname.startsWith("/onboarding")) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#0b0d14] text-[#F2F3F5]">
+        <main className="flex-1 flex flex-col">{children}</main>
+      </div>
+    );
+  }
 
   // If on a public route, render the public shell
   if (isPublicRoute) {

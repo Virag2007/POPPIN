@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { PostResponse } from "@/types";
 import { PostCard } from "./post-card";
 import { PostEditModal } from "./post-edit-modal";
@@ -14,8 +15,11 @@ interface PostDetailProps {
   token?: string | null;
 }
 
-export function PostDetail({ initialPost, currentUserId, token }: PostDetailProps) {
+export function PostDetail({ initialPost, currentUserId: propUserId, token: propToken }: PostDetailProps) {
   const router = useRouter();
+  const { user, token: authToken } = useAuth();
+  const currentUserId = propUserId || user?.id;
+  const token = propToken || authToken;
   const [post, setPost] = useState<PostResponse>(initialPost);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -46,7 +50,7 @@ export function PostDetail({ initialPost, currentUserId, token }: PostDetailProp
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E4E4E7] text-xs font-semibold text-zinc-700 hover:text-zinc-950 hover:bg-zinc-50 transition"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#2B2D31] border border-white/10 text-xs font-semibold text-[#B5BAC1] hover:text-white hover:bg-[#383A40] transition cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Feed</span>

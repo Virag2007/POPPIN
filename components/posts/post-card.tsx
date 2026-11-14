@@ -22,6 +22,7 @@ interface PostCardProps {
   post: PostResponse;
   currentUserId?: string;
   token?: string | null;
+  isModerator?: boolean;
   onEdit?: (post: PostResponse) => void;
   onDelete?: (postId: string) => Promise<void> | void;
 }
@@ -52,11 +53,12 @@ const POST_TYPE_CONFIG: Record<
   },
 };
 
-export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostCardProps) {
+export function PostCard({ post, currentUserId, token, isModerator = false, onEdit, onDelete }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
   const isOwner = Boolean(currentUserId && currentUserId === post.authorId);
+  const canDelete = Boolean(isOwner || isModerator);
   const typeConfig = POST_TYPE_CONFIG[post.type] || POST_TYPE_CONFIG.UPDATE;
   const BadgeIcon = typeConfig.icon;
 
@@ -135,10 +137,10 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
             {typeConfig.label}
           </span>
 
-          {/* Owner Actions */}
-          {isOwner && (
+          {/* Owner / Moderator Actions */}
+          {(isOwner || canDelete) && (
             <div className="flex items-center gap-1 ml-1">
-              {onEdit && (
+              {isOwner && onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(post)}
@@ -149,13 +151,13 @@ export function PostCard({ post, currentUserId, token, onEdit, onDelete }: PostC
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
               )}
-              {onDelete && (
+              {canDelete && onDelete && (
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
                   className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-white/10 transition text-xs disabled:opacity-50"
-                  title="Delete post"
+                  title={isOwner ? "Delete post" : "Delete post (as moderator)"}
                   aria-label="Delete post"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

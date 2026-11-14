@@ -101,18 +101,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    // 1. Immediately wipe local auth credentials and state synchronously for instant UI response
+    localStorage.removeItem("poppin_jwt");
+    if (typeof document !== "undefined") {
+      document.cookie = "poppin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    }
+    setToken(null);
+    setUser(null);
+    setProfile(null);
+
+    // 2. Fire session revocation in background without blocking UI
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      fetch("/api/v1/auth/logout", { method: "POST", keepalive: true }).catch(() => {});
     } catch {
-      // Ignore
-    } finally {
-      localStorage.removeItem("poppin_jwt");
-      if (typeof document !== "undefined") {
-        document.cookie = "poppin_token=; path=/; max-age=0";
-      }
-      setToken(null);
-      setUser(null);
-      setProfile(null);
+      // Ignore network errors on logout
+    }
+
+    // 3. Immediately redirect to login
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
     }
   };
 

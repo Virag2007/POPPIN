@@ -224,16 +224,16 @@ export function AppSidebar({ className = "", onNavigate }: AppSidebarProps) {
               className="w-8 h-8 rounded-full object-cover border border-white/10 shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-[#313338] text-[#8A9BFF] flex items-center justify-center font-bold text-xs shrink-0">
-              {profile?.username?.charAt(0).toUpperCase() || <User className="w-4 h-4 text-[#8A9BFF]" />}
+            <div className="w-8 h-8 rounded-full bg-[#313338] text-[#8A9BFF] flex items-center justify-center font-bold text-xs shrink-0 font-mono">
+              {profile?.username?.charAt(0).toUpperCase() || (user?.email ? user.email.charAt(0).toUpperCase() : <User className="w-4 h-4 text-[#8A9BFF]" />)}
             </div>
           )}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-bold text-white truncate">
-              {profile?.displayName || profile?.username || "Builder"}
+              {profile?.displayName || profile?.username || (user?.email ? user.email.split("@")[0] : "Account")}
             </p>
-            <p className="text-[10px] text-zinc-400 truncate">
-              @{profile?.username || "creator"}
+            <p className="text-[10px] text-zinc-400 truncate font-mono">
+              @{profile?.username || (user?.email ? user.email.split("@")[0] : "user")}
             </p>
           </div>
         </Link>

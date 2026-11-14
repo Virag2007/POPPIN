@@ -144,7 +144,7 @@ export class CommunityRepository {
   static async getUserMemberships(userId: string) {
     return prisma.communityMember.findMany({
       where: { userId },
-      select: { communityId: true },
+      select: { communityId: true, role: true },
     });
   }
 

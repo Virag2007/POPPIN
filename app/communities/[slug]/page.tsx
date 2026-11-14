@@ -8,6 +8,7 @@ import { Community, PostResponse } from "@/types";
 import { PostComposer } from "@/components/posts/post-composer";
 import { PostCard } from "@/components/posts/post-card";
 import { AvatarImage } from "@/components/ui/avatar-image";
+import { ManageCommunityModal } from "@/components/communities/manage-community-modal";
 import {
   ArrowLeft,
   Users,
@@ -21,6 +22,7 @@ import {
   Flame,
   Award,
   Loader2,
+  Settings,
 } from "lucide-react";
 
 interface CommunitySlugParams {
@@ -63,6 +65,25 @@ export default function CommunityDetailPage({
     "discussions" | "showcase" | "rules" | "members"
   >("discussions");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null);
+      const headers: Record<string, string> = {};
+      if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
+
+      const res = await fetch(`/api/v1/posts/${postId}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (res.ok) {
+        setCommunityPosts((prev) => prev.filter((p) => p.id !== postId));
+      }
+    } catch {
+      // Ignore
+    }
+  };
 
   // Fetch real community details and posts from PostgreSQL backend
   React.useEffect(() => {
@@ -231,7 +252,18 @@ export default function CommunityDetailPage({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-3 shrink-0 self-stretch sm:self-auto">
+            <div className="flex items-center gap-3 shrink-0 self-stretch sm:self-auto flex-wrap">
+              {community.isOwnerOrMod && (
+                <button
+                  type="button"
+                  onClick={() => setIsManageModalOpen(true)}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#5865F2]/40 bg-[#5865F2]/10 text-[#8A9BFF] hover:bg-[#5865F2]/20 text-sm font-semibold transition active:scale-95 cursor-pointer shadow-xs"
+                >
+                  <Settings className="w-4 h-4 text-[#8A9BFF]" />
+                  <span>Manage Hub</span>
+                </button>
+              )}
+
               <button
                 onClick={handleShareLink}
                 className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-[#F2F3F5] text-sm font-medium hover:bg-[#383A40] transition active:scale-95 cursor-pointer"
@@ -392,6 +424,8 @@ export default function CommunityDetailPage({
                         post={post}
                         currentUserId={user?.id}
                         token={token}
+                        isModerator={Boolean(community.isOwnerOrMod)}
+                        onDelete={handleDeletePost}
                       />
                     ))
                   )}
@@ -663,6 +697,16 @@ export default function CommunityDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Community Management Modal (Owner & Moderator) */}
+      <ManageCommunityModal
+        isOpen={isManageModalOpen}
+        onClose={() => setIsManageModalOpen(false)}
+        slug={community.slug}
+        communityName={community.name}
+        currentUserRole={community.currentUserRole}
+        token={token}
+      />
     </div>
   );
 }

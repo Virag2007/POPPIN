@@ -18,3 +18,18 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+    const user = await getAuthenticatedUser(request);
+
+    const result = await CommunityService.deleteCommunity(slug, user.id);
+    return successResponse(result, 200, result.message);
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+

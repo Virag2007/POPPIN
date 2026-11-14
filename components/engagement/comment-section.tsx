@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import { CommentResponse } from "@/types";
 import { CornerDownRight, Trash2, Edit2 } from "lucide-react";
 
@@ -10,15 +11,21 @@ interface CommentSectionProps {
   postId: string;
   currentUserId?: string;
   token?: string | null;
+  isModerator?: boolean;
   onCommentsCountChange?: (count: number) => void;
 }
 
 export function CommentSection({
   postId,
-  currentUserId,
-  token,
+  currentUserId: propUserId,
+  token: propToken,
+  isModerator = false,
   onCommentsCountChange,
 }: CommentSectionProps) {
+  const { user, token: authToken } = useAuth();
+  const currentUserId = propUserId || user?.id;
+  const token = propToken || authToken || (typeof window !== "undefined" ? localStorage.getItem("poppin_jwt") : null);
+
   const [comments, setComments] = useState<CommentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newCommentText, setNewCommentText] = useState("");
@@ -264,24 +271,26 @@ export function CommentSection({
                         </span>
                       </div>
 
-                      {isAuthor && (
+                      {(isAuthor || isModerator) && (
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCommentId(comment.id);
-                              setEditText(comment.content);
-                            }}
-                            className="p-1 text-zinc-400 hover:text-white transition"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
+                          {isAuthor && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditText(comment.content);
+                              }}
+                              className="p-1 text-zinc-400 hover:text-white transition"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleDeleteComment(comment.id)}
                             className="p-1 text-zinc-400 hover:text-red-400 transition"
-                            title="Delete"
+                            title={isAuthor ? "Delete" : "Delete (as moderator)"}
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -413,12 +422,12 @@ export function CommentSection({
                                     </span>
                                   </div>
 
-                                  {isReplyAuthor && (
+                                  {(isReplyAuthor || isModerator) && (
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteComment(reply.id)}
                                       className="p-1 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                                      title="Delete"
+                                      title={isReplyAuthor ? "Delete" : "Delete (as moderator)"}
                                     >
                                       <Trash2 className="w-2.5 h-2.5" />
                                     </button>

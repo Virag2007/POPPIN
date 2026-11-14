@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/db";
 import { AppError } from "@/lib/http/response";
 import { checkOwnership } from "@/lib/auth/middleware";
 import { EngagementRepository } from "@/repositories/engagement.repository";
@@ -177,12 +178,36 @@ export class EngagementService {
   }
 
   static async deleteComment(commentId: string, userId: string): Promise<{ success: true; message: string }> {
-    const comment = await EngagementRepository.findCommentById(commentId);
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      include: {
+        post: {
+          select: { authorId: true, communityId: true },
+        },
+      },
+    });
     if (!comment) {
       throw new AppError("Comment not found", 404, "NOT_FOUND");
     }
 
-    checkOwnership(comment.authorId, userId, "You do not have permission to delete this comment");
+    let isAuthorized = comment.authorId === userId || comment.post.authorId === userId;
+    if (!isAuthorized && comment.post.communityId) {
+      const membership = await prisma.communityMember.findUnique({
+        where: {
+          communityId_userId: {
+            communityId: comment.post.communityId,
+            userId,
+          },
+        },
+      });
+      if (membership && ["ADMIN", "MODERATOR", "OWNER"].includes(membership.role)) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      throw new AppError("You do not have permission to delete this comment", 403, "FORBIDDEN");
+    }
 
     await EngagementRepository.deleteComment(commentId);
     return { success: true, message: "Comment deleted successfully" };

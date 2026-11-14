@@ -92,17 +92,14 @@ function LoginForm() {
         setForgotStatus({
           loading: false,
           success: true,
-          message: data.message || "Password recovery token generated.",
-          resetToken: data.data?.resetToken,
+          message: data.message || "A 6-digit recovery code has been sent to your email.",
         });
-        if (data.data?.resetToken) {
-          setResetToken(data.data.resetToken);
-        }
+        setResetToken("");
       } else {
         setForgotStatus({
           loading: false,
           success: false,
-          message: data.error?.message || "Could not generate recovery token.",
+          message: data.error?.message || "Could not process password recovery.",
         });
       }
     } catch {
@@ -289,7 +286,7 @@ function LoginForm() {
             ) : !forgotStatus.success ? (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <p className="text-sm text-zinc-300">
-                  Enter your registered email address to generate a secure recovery token.
+                  Enter your registered email address. We will send a 6-digit verification code to reset your password.
                 </p>
                 <div>
                   <input
@@ -301,6 +298,9 @@ function LoginForm() {
                     className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-[#141517] text-white text-sm font-medium focus:ring-2 focus:ring-[#5865F2]/20 focus:border-[#5865F2] outline-none placeholder:text-zinc-500"
                   />
                 </div>
+                {forgotStatus.message && (
+                  <p className="text-xs text-rose-400">{forgotStatus.message}</p>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
@@ -315,25 +315,27 @@ function LoginForm() {
                     className="px-5 py-2 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold text-sm disabled:opacity-50 flex items-center gap-2"
                   >
                     {forgotStatus.loading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-                    <span>Request Recovery</span>
+                    <span>Send Reset Code</span>
                   </button>
                 </div>
               </form>
             ) : (
               <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="p-3 bg-emerald-500/10 text-emerald-300 rounded-xl text-xs font-semibold border border-emerald-500/20">
-                  Recovery token created! Enter your new password below.
+                <div className="p-3 bg-[#5865F2]/10 text-[#8A9BFF] rounded-xl text-xs font-semibold border border-[#5865F2]/20">
+                  A 6-digit code was sent to <strong className="text-white">{forgotEmail}</strong>.
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 mb-1">
-                    Recovery Token
+                    Enter 6-Digit Reset Code
                   </label>
                   <input
                     type="text"
                     required
+                    maxLength={6}
+                    placeholder="123456"
                     value={resetToken}
-                    onChange={(e) => setResetToken(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-[#141517] text-white text-xs font-mono"
+                    onChange={(e) => setResetToken(e.target.value.trim())}
+                    className="w-full text-center tracking-widest font-mono text-base py-2.5 rounded-xl border border-white/10 bg-[#141517] text-white focus:outline-none focus:ring-2 focus:ring-[#5865F2]"
                   />
                 </div>
                 <div>
@@ -347,17 +349,17 @@ function LoginForm() {
                     maxLength={72}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Min 8 characters"
+                    placeholder="At least 8 characters"
                     className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-[#141517] text-white text-sm font-medium focus:ring-2 focus:ring-[#5865F2]/20 outline-none placeholder:text-zinc-500"
                   />
                 </div>
                 <button
                   type="submit"
-                  disabled={resetLoading}
-                  className="w-full py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold text-sm flex items-center justify-center gap-2"
+                  disabled={resetLoading || resetToken.length < 4}
+                  className="w-full py-2.5 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {resetLoading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
-                  <span>Set New Password</span>
+                  <span>Verify & Update Password</span>
                 </button>
               </form>
             )}

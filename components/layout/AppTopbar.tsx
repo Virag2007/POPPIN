@@ -21,9 +21,24 @@ interface AppTopbarProps {
 }
 
 export function AppTopbar({ onOpenCreatePost, onToggleMobileSidebar }: AppTopbarProps) {
-  const { profile, logout } = useAuth();
+  const { user, profile, logout, isLoading } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Global shortcut: Cmd+K (Mac) or Ctrl+K (Windows/Linux) to open Search Palette
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const displayHandle = profile?.username || (user?.email ? user.email.split("@")[0] : null);
+  const displayName = profile?.displayName || profile?.username || (user?.email ? user.email.split("@")[0] : null);
 
   return (
     <>
@@ -117,11 +132,13 @@ export function AppTopbar({ onOpenCreatePost, onToggleMobileSidebar }: AppTopbar
               >
                 <div className="px-3 py-2 border-b border-white/10">
                   <p className="text-xs font-bold text-white truncate">
-                    {profile?.displayName || profile?.username || "Builder"}
+                    {displayName || (isLoading ? "Loading..." : "Account")}
                   </p>
-                  <p className="text-[10px] text-zinc-400 truncate">
-                    @{profile?.username || "creator"}
-                  </p>
+                  {displayHandle && (
+                    <p className="text-[10px] text-zinc-400 truncate font-mono">
+                      @{displayHandle}
+                    </p>
+                  )}
                 </div>
 
                 <Link

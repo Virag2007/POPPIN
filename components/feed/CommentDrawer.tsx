@@ -82,14 +82,14 @@ export function CommentDrawer({ postId, comments, onAddComment }: CommentDrawerP
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="Write a thoughtful reply..."
             maxLength={280}
-            className="flex-1 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-poppin-navy placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-poppin-lilac transition-all"
+            className="flex-1 px-4 py-2 rounded-xl bg-[#383A40] border border-white/10 text-xs font-medium text-white placeholder-zinc-400 focus:bg-[#313338] focus:outline-none focus:ring-2 focus:ring-[#5865F2] transition-all"
           />
           <button
             type="submit"
             disabled={!commentText.trim()}
-            className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-poppin-navy text-white text-xs font-bold hover:bg-poppin-navy-light disabled:opacity-40 transition-all flex items-center gap-1"
+            className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-[#5865F2] text-white text-xs font-bold hover:bg-[#4752C4] disabled:opacity-40 transition-all flex items-center gap-1 cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5 text-poppin-lilac" />
+            <Send className="w-3.5 h-3.5 text-white" />
             <span className="hidden sm:inline">Reply</span>
           </button>
         </form>

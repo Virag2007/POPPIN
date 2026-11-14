@@ -3,6 +3,8 @@ import { getOptionalAuthenticatedUser } from "@/lib/auth/middleware";
 import { UserRepository } from "@/repositories/user.repository";
 import { successResponse } from "@/lib/http/response";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const user = await getOptionalAuthenticatedUser(request);
   if (user) {

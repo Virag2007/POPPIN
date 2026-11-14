@@ -4,6 +4,8 @@ import { verifyEmailSchema } from "@/lib/validation/auth";
 import { successResponse, handleRouteError } from "@/lib/http/response";
 import { enforceRateLimit } from "@/lib/http/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimitCheck = enforceRateLimit(request, "auth:verify-email", { windowMs: 60_000, max: 30 });

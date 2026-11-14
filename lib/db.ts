@@ -6,22 +6,9 @@ declare global {
 }
 
 /**
- * Resolves the active database connection URL.
- * Supports pooled PostgreSQL (DATABASE_URL / POSTGRES_PRISMA_URL) and local SQLite (SQLITE_DATABASE_URL).
+ * Optimizes a PostgreSQL connection URL for serverless poolers (Neon / Supabase).
  */
-export function resolveDatabaseUrl(): string {
-  const rawUrl =
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.SQLITE_DATABASE_URL;
-
-  if (!rawUrl) {
-    throw new Error(
-      "Database connection URL is not configured. Please set DATABASE_URL (for PostgreSQL) or SQLITE_DATABASE_URL (for SQLite) in your environment variables."
-    );
-  }
-
-  // Optimize PostgreSQL connections for serverless poolers (Neon / Supabase)
+export function optimizePostgresUrl(rawUrl: string): string {
   if (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://")) {
     try {
       const url = new URL(rawUrl);
@@ -39,32 +26,78 @@ export function resolveDatabaseUrl(): string {
       return rawUrl;
     }
   }
-
   return rawUrl;
 }
 
+/**
+ * Asserts that a database connection URL is configured before running queries.
+ */
+export function assertDatabaseConfigured(): string {
+  const rawUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.SQLITE_DATABASE_URL;
+
+  if (!rawUrl || !rawUrl.trim()) {
+    throw new Error(
+      "Database connection URL is not configured. Please set DATABASE_URL (for PostgreSQL) or SQLITE_DATABASE_URL (for SQLite) in your environment variables."
+    );
+  }
+
+  return optimizePostgresUrl(rawUrl.trim());
+}
+
+/**
+ * Resolves the database connection URL.
+ */
+export function resolveDatabaseUrl(): string {
+  return assertDatabaseConfigured();
+}
+
 function createPrismaClient(): PrismaClient {
+  const rawUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.SQLITE_DATABASE_URL;
+
+  const url = rawUrl && rawUrl.trim() ? optimizePostgresUrl(rawUrl.trim()) : undefined;
+
   const baseClient = new PrismaClient({
-    datasources: {
-      db: {
-        url: resolveDatabaseUrl(),
-      },
-    },
+    datasources: url
+      ? {
+          db: {
+            url,
+          },
+        }
+      : undefined,
     log:
       process.env.NODE_ENV === "development"
         ? ["warn", "error"]
         : ["error"],
   });
 
-  // Provide robust transaction timeout (25s) for serverless/pooled PostgreSQL connections
   return baseClient.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ args, query }) {
+          assertDatabaseConfigured();
+          return query(args);
+        },
+      },
+    },
     client: {
+      async $connect() {
+        assertDatabaseConfigured();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (baseClient as any).$connect();
+      },
       async $transaction<R>(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fn: (tx: any) => Promise<R>,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         options?: { maxWait?: number; timeout?: number; isolationLevel?: any }
       ): Promise<R> {
+        assertDatabaseConfigured();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (baseClient as any).$transaction(fn, {
           maxWait: 10000,
@@ -76,7 +109,6 @@ function createPrismaClient(): PrismaClient {
   }) as unknown as PrismaClient;
 }
 
-// Lazy initialization cache to protect build-time module evaluation
 let clientInstance: PrismaClient | undefined;
 
 export function getPrismaClient(): PrismaClient {
@@ -92,7 +124,6 @@ export function getPrismaClient(): PrismaClient {
   return clientInstance;
 }
 
-// Non-invoking properties that Next.js / React / bundlers inspect during build time
 const IGNORED_PROPS = new Set([
   "then",
   "catch",
@@ -105,8 +136,8 @@ const IGNORED_PROPS = new Set([
 
 /**
  * Proxy-based Prisma client export.
- * Defers client creation and database URL validation until first actual runtime query/access.
- * This prevents build-time module evaluation failures while strictly enforcing validation at runtime.
+ * Defers client access and database URL validation until first actual runtime query/access.
+ * Ensures Next.js build-time page-data collection succeeds even if build environment lacks database credentials.
  */
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
